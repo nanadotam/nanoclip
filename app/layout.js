@@ -30,12 +30,13 @@ export const metadata = {
 export default function RootLayout({ children }) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={`${geistSans.variable} ${geistMono.variable} ${monaSans.variable} antialiased min-h-screen flex flex-col`}>
+      <body className={`${geistSans.variable} ${geistMono.variable} ${monaSans.variable} antialiased min-h-screen flex flex-col bg-gradient-to-b from-background to-background/95`}>
         <ThemeProvider
           attribute="class"
           defaultTheme="dark"
           enableSystem={true}
         >
+          <div className="fixed inset-0 -z-10 bg-[radial-gradient(45%_25%_at_50%_50%,rgba(56,189,248,0.05),rgba(56,189,248,0))]" />
           <Navbar />
           <main className="flex-1 flex flex-col">
             {children}

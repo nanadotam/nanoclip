@@ -6,6 +6,7 @@ import { motion } from 'framer-motion';
 import Download from "./components/home/Download";
 import Upload from "./components/home/Upload";
 import TestConnection from '@/components/TestConnection';
+import { FlipWords } from "@/components/ui/flip-words";
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -39,10 +40,15 @@ export default function Home() {
       animate="visible"
     >
       <motion.h1 
-        className="font-weight-900 font-mona-sans text-3xl sm:text-4xl md:text-6xl lg:text-[6rem] tracking-tight text-center mb-6 md:mb-12"
+        className="font-weight-500 font-mona-sans text-3xl sm:text-4xl md:text-6xl lg:text-[6rem] tracking-tight text-center mb-6 md:mb-12"
         variants={itemVariants}
       >
-        Copy. Paste. Get.
+        <FlipWords
+          words={["Copy.", "Paste.", "Get."]}
+          duration={1200}
+          delay={800}
+          className="text-blue-500 font-medium"
+        />
       </motion.h1>
       <motion.div 
         className="w-full max-w-[80rem] flex flex-col md:flex-row justify-center items-center gap-4 md:gap-8 px-4"
