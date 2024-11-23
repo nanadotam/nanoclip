@@ -17,7 +17,7 @@ class Clip {
         $this->conn = $db;
     }
 
-    public function read_single() {
+    public function read_single($include_password = false) {
         $query = 'SELECT * FROM ' . $this->table . ' 
                  WHERE url_slug = ? 
                  AND (expires_at IS NULL OR expires_at > NOW())';
@@ -29,10 +29,22 @@ class Clip {
         $result = $stmt->get_result();
         $clip = $result->fetch_assoc();
 
-        // Hide password hash in response
         if ($clip) {
-            $clip['is_protected'] = !empty($clip['password_hash']);
+            $is_protected = !empty($clip['password_hash']);
+            
+            // If clip is password protected and full content not requested
+            if ($is_protected && !$include_password) {
+                return [
+                    'url_slug' => $clip['url_slug'],
+                    'is_protected' => true,
+                    'created_at' => $clip['created_at'],
+                    'message' => 'This clip is password protected'
+                ];
+            }
+
+            // Remove password hash from response
             unset($clip['password_hash']);
+            $clip['is_protected'] = $is_protected;
         }
         
         return $clip;
@@ -57,10 +69,10 @@ class Clip {
         return $stmt->execute();
     }
 
-    public function verify_password($url_slug, $password) {
+    public function verify_password($password) {
         $query = 'SELECT password_hash FROM ' . $this->table . ' WHERE url_slug = ?';
         $stmt = $this->conn->prepare($query);
-        $stmt->bind_param('s', $url_slug);
+        $stmt->bind_param('s', $this->url_slug);
         $stmt->execute();
         
         $result = $stmt->get_result();

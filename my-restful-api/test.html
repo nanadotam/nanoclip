@@ -82,9 +82,16 @@
             try {
                 const url = new URL(API_URL);
                 url.searchParams.append('url_slug', urlSlug);
-                if (password) url.searchParams.append('password', password);
 
-                const response = await fetch(url);
+                const headers = {
+                    'Content-Type': 'application/json'
+                };
+                
+                if (password) {
+                    headers['X-Clip-Password'] = password;
+                }
+
+                const response = await fetch(url, { headers });
                 const result = await response.json();
                 document.getElementById('result').textContent = JSON.stringify(result, null, 2);
             } catch (error) {

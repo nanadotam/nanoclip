@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost/api';
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api';
 
 const clipService = {
   async getClip(urlSlug) {
@@ -40,6 +40,9 @@ const clipService = {
       const response = await axios.post(`${API_BASE_URL}/clips`, formattedData);
       return response.data;
     } catch (error) {
+      if (error.response?.status === 409) {
+        throw new Error('This URL is already taken. Please choose a different one.');
+      }
       throw new Error(error.response?.data?.message || 'Failed to create clip');
     }
   }
