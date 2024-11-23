@@ -15,6 +15,7 @@ export default function ClipPage() {
   const [error, setError] = useState('');
   const [isProtected, setIsProtected] = useState(false);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [isViewOnce, setIsViewOnce] = useState(false);
 
   const fetchClip = async (password = null) => {
     const headers = new Headers({
@@ -50,6 +51,7 @@ export default function ClipPage() {
         setClipData(data);
         setIsProtected(false);
         setShowPasswordModal(false);
+        setIsViewOnce(data.is_view_once === 1);
         setIsLoading(false);
         return { success: true, data };
       }
@@ -71,6 +73,16 @@ export default function ClipPage() {
   useEffect(() => {
     fetchClip();
   }, [params.clipId]);
+
+  useEffect(() => {
+    if (isViewOnce && clipData) {
+      const timer = setTimeout(() => {
+        router.push('/');
+      }, 30000); // 30 seconds viewing time
+
+      return () => clearTimeout(timer);
+    }
+  }, [isViewOnce, clipData]);
 
   const handlePasswordVerification = async (password) => {
     setIsLoading(true);
@@ -105,7 +117,7 @@ export default function ClipPage() {
       {isProtected && showPasswordModal && (
         <PasswordModal
           onVerify={handlePasswordVerification}
-          onClose={() => router.push('/')}
+          onClose={() => setShowPasswordModal(false)}
         />
       )}
 
@@ -120,7 +132,16 @@ export default function ClipPage() {
             Loading...
           </Card>
         ) : clipData ? (
-          <ClipContent clipData={clipData} />
+          <>
+            <ClipContent clipData={clipData} />
+            {isViewOnce && (
+              <Card className="mt-4 p-4 bg-yellow-500/10 border-yellow-500">
+                <p className="text-center text-sm">
+                  This clip will be deleted after viewing. You have 30 seconds to view it.
+                </p>
+              </Card>
+            )}
+          </>
         ) : !isProtected && (
           <Card className="p-6 text-center text-muted-foreground">
             This clip has no content
