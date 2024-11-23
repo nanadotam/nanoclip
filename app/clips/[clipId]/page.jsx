@@ -36,28 +36,35 @@ export default function ClipPage() {
 
       const data = await response.json();
 
-      if (data.error) {
-        throw new Error(data.error);
+      // If the clip is protected and we don't have a password
+      if (data.is_protected && !password) {
+        setIsProtected(true);
+        setShowPasswordModal(true);
+        setClipData(null);
+        setIsLoading(false);
+        return { success: false, isProtected: true };
       }
 
-      // Handle protected clips
-      if (data.is_protected) {
-        setIsProtected(true);
-        if (!password) {
-          setShowPasswordModal(true);
-          setClipData(null);
-          setIsLoading(false);
-          return;
-        }
+      // If we have content, it means password was correct
+      if (data.text_content || data.file_metadata) {
+        setClipData(data);
+        setIsProtected(false);
+        setShowPasswordModal(false);
+        setIsLoading(false);
+        return { success: true, data };
+      }
+
+      // If we provided a password but still got protected response
+      if (password && data.is_protected) {
+        return { success: false, wrongPassword: true };
       }
 
       setClipData(data);
-      setIsProtected(false);
-      setShowPasswordModal(false);
-      setIsLoading(false);
+      return { success: true, data };
     } catch (err) {
       setError(err.message);
       setIsLoading(false);
+      return { success: false, error: err.message };
     }
   };
 
@@ -68,11 +75,14 @@ export default function ClipPage() {
   const handlePasswordVerification = async (password) => {
     setIsLoading(true);
     try {
-      await fetchClip(password);
-      if (clipData && !clipData.is_protected) {
-        return null;
+      const result = await fetchClip(password);
+      if (!result.success) {
+        if (result.wrongPassword) {
+          return "Invalid password. Please try again.";
+        }
+        return "Failed to verify password. Please try again.";
       }
-      return "Invalid password. Please try again.";
+      return null;
     } catch (err) {
       return "Failed to verify password. Please try again.";
     } finally {
