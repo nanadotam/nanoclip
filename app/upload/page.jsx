@@ -44,6 +44,8 @@ export default function UploadPage() {
     const formData = new FormData();
     formData.append('url_slug', e.target.urlSlug.value);
     formData.append('text_content', text);
+    formData.append('password', e.target.password.value || '');
+    formData.append('expire_option', e.target.expireOption.value);
     
     files.forEach(file => {
       formData.append('files[]', file);
@@ -98,6 +100,43 @@ export default function UploadPage() {
                       className="flex-1"
                     />
                   </div>
+                </div>
+              </div>
+            </Card>
+
+            <Card className="p-4 md:p-6">
+              <div className="space-y-4">
+                <div>
+                  <label htmlFor="password" className="text-sm font-medium mb-2 block">
+                    Password Protection (Optional)
+                  </label>
+                  <Input
+                    id="password"
+                    name="password"
+                    type="password"
+                    placeholder="Enter password to protect clip"
+                    className="flex-1"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="expireOption" className="text-sm font-medium mb-2 block">
+                    Clip Expiry
+                  </label>
+                  <select
+                    id="expireOption"
+                    name="expireOption"
+                    className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors"
+                    defaultValue="1d"
+                  >
+                    <option value="view">Delete when viewed</option>
+                    <option value="1m">1 minute</option>
+                    <option value="10m">10 minutes</option>
+                    <option value="1h">1 hour</option>
+                    <option value="5h">5 hours</option>
+                    <option value="12h">12 hours</option>
+                    <option value="1d">1 day</option>
+                    <option value="1w">1 week</option>
+                  </select>
                 </div>
               </div>
             </Card>

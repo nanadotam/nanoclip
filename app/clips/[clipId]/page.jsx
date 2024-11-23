@@ -1,40 +1,62 @@
 "use client";
 
 import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
-import { Copy, Lock, FileText } from 'lucide-react';
-import MDEditor from '@uiw/react-md-editor';
 import { useParams, useRouter } from 'next/navigation';
-import { Card } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import PasswordProtection from '@/components/clips/PasswordProtection';
+import { motion } from 'framer-motion';
 import ClipContent from '@/components/clips/ClipContent';
-import LoadingState from '@/components/clips/LoadingState';
-import ErrorState from '@/components/clips/ErrorState';
-import clipService from '@/lib/api/clipService';
+import PasswordModal from '@/components/clips/PasswordModal';
+import { Card } from '@/components/ui/card';
 
 export default function ClipPage() {
   const params = useParams();
   const router = useRouter();
-  const [isLoading, setIsLoading] = useState(true);
-  const [isProtected, setIsProtected] = useState(false);
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [clipData, setClipData] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
+  const [isProtected, setIsProtected] = useState(false);
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
 
   const fetchClip = async (password = null) => {
+    const headers = new Headers({
+      'Content-Type': 'application/json'
+    });
+    
+    if (password) {
+      headers.append('X-Clip-Password', password);
+    }
+
     try {
-      setIsLoading(true);
-      const response = await clipService.getClip(params.clipId, password);
-      setClipData(response);
-      setIsProtected(response.isProtected);
-      if (!response.isProtected) {
-        setIsAuthenticated(true);
+      const response = await fetch(`http://localhost:8000/api/clips?url_slug=${params.clipId}`, {
+        headers
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch clip');
       }
+
+      const data = await response.json();
+
+      if (data.error) {
+        throw new Error(data.error);
+      }
+
+      // Handle protected clips
+      if (data.is_protected) {
+        setIsProtected(true);
+        if (!password) {
+          setShowPasswordModal(true);
+          setClipData(null);
+          setIsLoading(false);
+          return;
+        }
+      }
+
+      setClipData(data);
+      setIsProtected(false);
+      setShowPasswordModal(false);
+      setIsLoading(false);
     } catch (err) {
       setError(err.message);
-    } finally {
       setIsLoading(false);
     }
   };
@@ -44,26 +66,57 @@ export default function ClipPage() {
   }, [params.clipId]);
 
   const handlePasswordVerification = async (password) => {
+    setIsLoading(true);
     try {
-      const response = await clipService.getClip(params.clipId, password);
-      setIsAuthenticated(true);
-      setClipData(response);
+      await fetchClip(password);
+      if (clipData && !clipData.is_protected) {
+        return null;
+      }
+      return "Invalid password. Please try again.";
     } catch (err) {
-      return 'Incorrect password';
+      return "Failed to verify password. Please try again.";
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  if (isLoading) {
-    return <LoadingState />;
-  }
-
   if (error) {
-    return <ErrorState message={error} />;
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <Card className="p-6 text-center text-destructive">
+          {error}
+        </Card>
+      </div>
+    );
   }
 
-  if (isProtected && !isAuthenticated) {
-    return <PasswordProtection onVerify={handlePasswordVerification} />;
-  }
+  return (
+    <>
+      {isProtected && showPasswordModal && (
+        <PasswordModal
+          onVerify={handlePasswordVerification}
+          onClose={() => router.push('/')}
+        />
+      )}
 
-  return <ClipContent clipData={clipData} />;
+      <motion.div 
+        className="container mx-auto px-4 py-8"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5 }}
+      >
+        {isLoading ? (
+          <Card className="p-6 text-center">
+            Loading...
+          </Card>
+        ) : clipData ? (
+          <ClipContent clipData={clipData} />
+        ) : !isProtected && (
+          <Card className="p-6 text-center text-muted-foreground">
+            This clip has no content
+          </Card>
+        )}
+      </motion.div>
+    </>
+  );
 } 
