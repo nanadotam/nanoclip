@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PHP RESTful API Example</title>
+</head>
+<body>
+    <h2>Users</h2>
+    <button onclick="fetchUsers()">Load Users</button>
+    <h3>Create New User</h3>
+	<input type="text" id="name" placeholder="Name">
+	<input type="email" id="email" placeholder="Email">
+	<input type="number" id="age" placeholder="Age">
+	<button onclick="createUser()">Add New User</button>
+
+    <div id="users"></div>
+
+    <h3>Update User</h3>
+    <input type="number" id="updateId" placeholder="User ID">
+    <input type="text" id="updateName" placeholder="New Name">
+    <input type="email" id="updateEmail" placeholder="New Email">
+    <input type="number" id="updateAge" placeholder="New Age">
+    <button onclick="updateUser()">Update User</button>
+
+    <h3>Delete User</h3>
+    <input type="number" id="deleteId" placeholder="User ID">
+    <button onclick="deleteUser()">Delete User</button>
+
+    <script>
+        async function fetchUsers() {
+		const response = await fetch('http://localhost/my-restful-api/api/user/read.php');
+		const users = await response.json(); 
+		const usersDiv = document.getElementById('users');
+		usersDiv.innerHTML = users.map(user => 
+        '<p>ID: ' + user.id + ', Name: ' + user.name + ', Email: ' + user.email + ', Age: ' + user.age + '</p>').join('');
+		}
+
+		async function createUser() {
+		// Get values from input fields
+		const name = document.getElementById('name').value;
+		const email = document.getElementById('email').value;
+		const age = document.getElementById('age').value;
+
+		// Prepare user data
+		const userData = {
+			name: name,
+			email: email,
+			age: parseInt(age)
+		};
+
+		// Send data to the create endpoint
+		await fetch('http://localhost/my-restful-api/api/user/create.php', {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify(userData)
+		});
+
+		// Refresh user list after adding new user
+		fetchUsers();
+	}
+
+
+        async function updateUser() {
+            const id = document.getElementById('updateId').value;
+            const name = document.getElementById('updateName').value;
+            const email = document.getElementById('updateEmail').value;
+            const age = document.getElementById('updateAge').value;
+
+            if (!id || !name || !email || !age) {
+                alert("Please fill out all fields to update a user.");
+                return;
+            }
+
+            const updateData = { id: parseInt(id), name: name, email: email, age: parseInt(age) };
+
+            await fetch('http://localhost/my-restful-api/api/user/update.php', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(updateData)
+            });
+
+            fetchUsers();
+        }
+
+        async function deleteUser() {
+            const id = document.getElementById('deleteId').value;
+
+            if (!id) {
+                alert("Please enter a user ID to delete.");
+                return;
+            }
+
+            const deleteData = { id: parseInt(id) };
+
+            await fetch('http://localhost/my-restful-api/api/user/delete.php', {
+                method: 'DELETE',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(deleteData)
+            });
+
+            fetchUsers();
+        }
+    </script>
+</body>
+</html>

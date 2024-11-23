@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Clip API</title>
+</head>
+<body>
+    <h2>Create Clip</h2>
+    <form id="createForm">
+        <input type="text" id="urlSlug" placeholder="URL Slug" required><br>
+        <textarea id="textContent" placeholder="Content"></textarea><br>
+        <input type="password" id="password" placeholder="Password (optional)"><br>
+        <button type="submit">Create Clip</button>
+    </form>
+
+    <h2>Get Clip</h2>
+    <form id="getForm">
+        <input type="text" id="getUrlSlug" placeholder="URL Slug" required><br>
+        <button type="submit">Get Clip</button>
+    </form>
+
+    <div id="result"></div>
+
+    <script>
+        document.getElementById('createForm').onsubmit = async (e) => {
+            e.preventDefault();
+            const data = {
+                url_slug: document.getElementById('urlSlug').value,
+                content_type: 'text',
+                text_content: document.getElementById('textContent').value,
+                password_hash: document.getElementById('password').value || null
+            };
+
+            try {
+                const response = await fetch('http://localhost:8000/api/clips', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(data)
+                });
+                const result = await response.json();
+                document.getElementById('result').textContent = JSON.stringify(result);
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        };
+
+        document.getElementById('getForm').onsubmit = async (e) => {
+            e.preventDefault();
+            const urlSlug = document.getElementById('getUrlSlug').value;
+
+            try {
+                const response = await fetch(`http://localhost:8000/api/clips?url_slug=${urlSlug}`);
+                const result = await response.json();
+                document.getElementById('result').textContent = JSON.stringify(result);
+            } catch (error) {
+                console.error('Error:', error);
+            }
+        };
+    </script>
+</body>
+</html> 
