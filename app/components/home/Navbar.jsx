@@ -2,7 +2,7 @@
 
 import { motion } from 'framer-motion';
 import Link from 'next/link';
-import { NavigationMenu, NavigationMenuItem, NavigationMenuLink, NavigationMenuList } from "@/components/ui/navigation-menu"
+import { NavigationMenu, NavigationMenuItem, NavigationMenuLink, NavigationMenuList, NavigationMenuContent, NavigationMenuTrigger } from "@/components/ui/navigation-menu"
 import { cn } from "@/lib/utils"
 import { navigationMenuTriggerStyle } from "@/components/ui/navigation-menu"
 import { ThemeToggle } from "@/components/ThemeToggle"
@@ -33,25 +33,56 @@ export default function Navbar() {
       <NavigationMenu className="hidden md:flex space-x-4">
         <NavigationMenuList>
           <NavigationMenuItem>
-            <Link href="/about" legacyBehavior passHref>
+            <Link href="/upload" legacyBehavior passHref>
               <NavigationMenuLink className={cn(navigationMenuTriggerStyle(), "px-6")}>
-                About
+                Upload
               </NavigationMenuLink>
             </Link>
           </NavigationMenuItem>
+          
           <NavigationMenuItem>
-            <Link href="/how-it-works" legacyBehavior passHref>
+            <Link href="/download" legacyBehavior passHref>
               <NavigationMenuLink className={cn(navigationMenuTriggerStyle(), "px-6")}>
-                How It Works
+                Download
               </NavigationMenuLink>
             </Link>
           </NavigationMenuItem>
+
           <NavigationMenuItem>
-            <Link href="/contact" legacyBehavior passHref>
-              <NavigationMenuLink className={cn(navigationMenuTriggerStyle(), "px-6")}>
-                Contact
-              </NavigationMenuLink>
-            </Link>
+            <NavigationMenuTrigger className="px-6">More</NavigationMenuTrigger>
+            <NavigationMenuContent>
+              <motion.div 
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                className="w-[200px] p-2 bg-popover rounded-md shadow-lg"
+              >
+                <Link href="/about" legacyBehavior passHref>
+                  <NavigationMenuLink className={cn(
+                    "block px-4 py-2 hover:bg-accent rounded-sm transition-colors",
+                    "text-sm font-medium"
+                  )}>
+                    About
+                  </NavigationMenuLink>
+                </Link>
+                <Link href="/how-it-works" legacyBehavior passHref>
+                  <NavigationMenuLink className={cn(
+                    "block px-4 py-2 hover:bg-accent rounded-sm transition-colors",
+                    "text-sm font-medium"
+                  )}>
+                    How It Works
+                  </NavigationMenuLink>
+                </Link>
+                <Link href="/contact" legacyBehavior passHref>
+                  <NavigationMenuLink className={cn(
+                    "block px-4 py-2 hover:bg-accent rounded-sm transition-colors",
+                    "text-sm font-medium"
+                  )}>
+                    Contact
+                  </NavigationMenuLink>
+                </Link>
+              </motion.div>
+            </NavigationMenuContent>
           </NavigationMenuItem>
         </NavigationMenuList>
       </NavigationMenu>
