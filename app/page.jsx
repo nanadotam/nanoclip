@@ -5,6 +5,7 @@
 import { motion } from 'framer-motion';
 import Download from "./components/home/Download";
 import Upload from "./components/home/Upload";
+import TestConnection from '@/components/TestConnection';
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -50,6 +51,7 @@ export default function Home() {
         <Upload />
         <Download />
       </motion.div>
+      <TestConnection />
     </motion.div>
   );
 }

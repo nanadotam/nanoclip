@@ -1,51 +1,57 @@
-import axios from 'axios';
+import { ENDPOINTS } from '@/config/api';
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api';
-
-const clipService = {
-  async getClip(urlSlug) {
+class ClipService {
+  async createClip(formData) {
     try {
-      const response = await axios.get(`${API_BASE_URL}/clips`, {
-        params: { url_slug: urlSlug }
+      const response = await fetch(ENDPOINTS.clips, {
+        method: 'POST',
+        body: formData // FormData is already properly formatted
       });
-      
-      if (!response.data) {
-        throw new Error('Clip not found');
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to create clip');
       }
 
-      return {
-        isProtected: !!response.data.password_hash,
-        content: {
-          text: response.data.text_content,
-          files: response.data.file_metadata ? JSON.parse(response.data.file_metadata) : []
-        }
-      };
+      return await response.json();
     } catch (error) {
-      throw new Error(error.response?.data?.message || 'Failed to fetch clip');
-    }
-  },
-
-  async createClip(clipData) {
-    try {
-      const formattedData = {
-        url_slug: clipData.urlSlug,
-        content_type: clipData.files ? 'text_file' : 'text',
-        text_content: clipData.text || null,
-        file_url: clipData.fileUrl || null,
-        file_metadata: clipData.files ? JSON.stringify(clipData.files) : null,
-        password_hash: clipData.password || null,
-        expires_at: clipData.expiresAt || null
-      };
-
-      const response = await axios.post(`${API_BASE_URL}/clips`, formattedData);
-      return response.data;
-    } catch (error) {
-      if (error.response?.status === 409) {
-        throw new Error('This URL is already taken. Please choose a different one.');
-      }
-      throw new Error(error.response?.data?.message || 'Failed to create clip');
+      throw new Error(error.message);
     }
   }
-};
 
-export default clipService; 
+  async getClip(urlSlug, password = null) {
+    try {
+      const headers = {};
+      if (password) {
+        headers['X-Clip-Password'] = password;
+      }
+
+      const response = await fetch(`${ENDPOINTS.clips}?url_slug=${urlSlug}`, {
+        headers
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to fetch clip');
+      }
+
+      return await response.json();
+    } catch (error) {
+      throw new Error(error.message);
+    }
+  }
+
+  async downloadFile(filename) {
+    try {
+      const response = await fetch(ENDPOINTS.download(filename));
+      if (!response.ok) {
+        throw new Error('Failed to download file');
+      }
+      return response.blob();
+    } catch (error) {
+      throw new Error(error.message);
+    }
+  }
+}
+
+export default new ClipService(); 

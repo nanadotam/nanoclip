@@ -12,6 +12,7 @@ import PasswordProtection from '@/components/clips/PasswordProtection';
 import ClipContent from '@/components/clips/ClipContent';
 import LoadingState from '@/components/clips/LoadingState';
 import ErrorState from '@/components/clips/ErrorState';
+import clipService from '@/lib/api/clipService';
 
 export default function ClipPage() {
   const params = useParams();
@@ -22,35 +23,31 @@ export default function ClipPage() {
   const [clipData, setClipData] = useState(null);
   const [error, setError] = useState('');
 
-  useEffect(() => {
-    fetchClipData();
-  }, [params.clipId]);
-
-  const fetchClipData = async () => {
+  const fetchClip = async (password = null) => {
     try {
       setIsLoading(true);
-      // This would be your API call to fetch clip data
-      // For demo, we'll simulate with mock data
-      const response = await mockFetchClip(params.clipId);
-      
+      const response = await clipService.getClip(params.clipId, password);
+      setClipData(response);
       setIsProtected(response.isProtected);
       if (!response.isProtected) {
-        setClipData(response.content);
         setIsAuthenticated(true);
       }
     } catch (err) {
-      setError('Clip not found');
+      setError(err.message);
     } finally {
       setIsLoading(false);
     }
   };
 
+  useEffect(() => {
+    fetchClip();
+  }, [params.clipId]);
+
   const handlePasswordVerification = async (password) => {
     try {
-      // This would be your API call to verify password
-      const response = await mockVerifyPassword(params.clipId, password);
+      const response = await clipService.getClip(params.clipId, password);
       setIsAuthenticated(true);
-      setClipData(response.content);
+      setClipData(response);
     } catch (err) {
       return 'Incorrect password';
     }
@@ -69,46 +66,4 @@ export default function ClipPage() {
   }
 
   return <ClipContent clipData={clipData} />;
-}
-
-// Mock API functions for demonstration
-const mockFetchClip = async (clipId) => {
-  await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate network delay
-  
-  if (clipId.startsWith('protected-')) {
-    return {
-      isProtected: true,
-      clipId,
-    };
-  }
-
-  return {
-    isProtected: false,
-    clipId,
-    content: {
-      text: '# Sample Clip\nThis is an unprotected clip.',
-      files: [
-        { name: 'document.pdf', size: 1024, type: 'pdf' },
-        { name: 'image.jpg', size: 2048, type: 'image' },
-      ]
-    }
-  };
-};
-
-const mockVerifyPassword = async (clipId, password) => {
-  await new Promise(resolve => setTimeout(resolve, 500));
-  
-  if (password !== 'demo123') {
-    throw new Error('Invalid password');
-  }
-
-  return {
-    content: {
-      text: '# Protected Content\nThis is a password-protected clip.',
-      files: [
-        { name: 'secret.pdf', size: 1024, type: 'pdf' },
-        { name: 'confidential.jpg', size: 2048, type: 'image' },
-      ]
-    }
-  };
-}; 
+} 

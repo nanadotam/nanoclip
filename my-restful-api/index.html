@@ -1,106 +1,168 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PHP RESTful API Example</title>
+    <title>Test Clip API</title>
+    <style>
+        body { max-width: 800px; margin: 0 auto; padding: 20px; font-family: Arial; }
+        .form-group { margin-bottom: 15px; }
+        input, textarea { width: 100%; padding: 8px; margin-top: 5px; }
+        button { padding: 10px 20px; background: #0070f3; color: white; border: none; cursor: pointer; }
+        #result { margin-top: 20px; padding: 10px; background: #f0f0f0; }
+        .file-list { margin-top: 10px; }
+        .file-item { padding: 5px; border: 1px solid #ddd; margin: 5px 0; }
+        .tabs { display: flex; margin-bottom: 20px; }
+        .tab { padding: 10px 20px; cursor: pointer; background: #eee; }
+        .tab.active { background: #0070f3; color: white; }
+        .form-container { display: none; }
+        .form-container.active { display: block; }
+    </style>
 </head>
 <body>
-    <h2>Users</h2>
-    <button onclick="fetchUsers()">Load Users</button>
-    <h3>Create New User</h3>
-	<input type="text" id="name" placeholder="Name">
-	<input type="email" id="email" placeholder="Email">
-	<input type="number" id="age" placeholder="Age">
-	<button onclick="createUser()">Add New User</button>
+    <div class="tabs">
+        <div class="tab active" onclick="switchTab('create')">Create Clip</div>
+        <div class="tab" onclick="switchTab('get')">Get Clip</div>
+    </div>
 
-    <div id="users"></div>
+    <div id="createForm" class="form-container active">
+        <h2>Create Clip</h2>
+        <form onsubmit="handleCreate(event)">
+            <div class="form-group">
+                <label>URL Slug:</label>
+                <input type="text" id="urlSlug" required>
+            </div>
+            <div class="form-group">
+                <label>Content:</label>
+                <textarea id="textContent" rows="4"></textarea>
+            </div>
+            <div class="form-group">
+                <label>Files:</label>
+                <input type="file" id="files" multiple>
+                <small>Max 5 files. Supported types: Documents, Images, Videos, Audio, Archives</small>
+            </div>
+            <div class="form-group">
+                <label>Password (optional):</label>
+                <input type="password" id="password">
+            </div>
+            <div class="form-group">
+                <label>Expires:</label>
+                <select id="expireOption">
+                    <option value="view">Delete when viewed</option>
+                    <option value="1m">1 minute</option>
+                    <option value="10m">10 minutes</option>
+                    <option value="1h">1 hour</option>
+                    <option value="5h">5 hours</option>
+                    <option value="12h">12 hours</option>
+                    <option value="1d">1 day</option>
+                    <option value="1w">1 week</option>
+                </select>
+            </div>
+            <button type="submit">Create Clip</button>
+        </form>
+    </div>
 
-    <h3>Update User</h3>
-    <input type="number" id="updateId" placeholder="User ID">
-    <input type="text" id="updateName" placeholder="New Name">
-    <input type="email" id="updateEmail" placeholder="New Email">
-    <input type="number" id="updateAge" placeholder="New Age">
-    <button onclick="updateUser()">Update User</button>
+    <div id="getForm" class="form-container">
+        <h2>Get Clip</h2>
+        <form onsubmit="handleGet(event)">
+            <div class="form-group">
+                <label>URL Slug:</label>
+                <input type="text" id="getUrlSlug" required>
+            </div>
+            <div class="form-group">
+                <label>Password (if required):</label>
+                <input type="password" id="getPassword">
+            </div>
+            <button type="submit">Get Clip</button>
+        </form>
+    </div>
 
-    <h3>Delete User</h3>
-    <input type="number" id="deleteId" placeholder="User ID">
-    <button onclick="deleteUser()">Delete User</button>
+    <div id="result"></div>
 
     <script>
-        async function fetchUsers() {
-		const response = await fetch('http://localhost/my-restful-api/api/user/read.php');
-		const users = await response.json(); 
-		const usersDiv = document.getElementById('users');
-		usersDiv.innerHTML = users.map(user => 
-        '<p>ID: ' + user.id + ', Name: ' + user.name + ', Email: ' + user.email + ', Age: ' + user.age + '</p>').join('');
-		}
+        const API_URL = 'http://localhost:8000/api/clips';
 
-		async function createUser() {
-		// Get values from input fields
-		const name = document.getElementById('name').value;
-		const email = document.getElementById('email').value;
-		const age = document.getElementById('age').value;
-
-		// Prepare user data
-		const userData = {
-			name: name,
-			email: email,
-			age: parseInt(age)
-		};
-
-		// Send data to the create endpoint
-		await fetch('http://localhost/my-restful-api/api/user/create.php', {
-			method: 'POST',
-			headers: { 'Content-Type': 'application/json' },
-			body: JSON.stringify(userData)
-		});
-
-		// Refresh user list after adding new user
-		fetchUsers();
-	}
-
-
-        async function updateUser() {
-            const id = document.getElementById('updateId').value;
-            const name = document.getElementById('updateName').value;
-            const email = document.getElementById('updateEmail').value;
-            const age = document.getElementById('updateAge').value;
-
-            if (!id || !name || !email || !age) {
-                alert("Please fill out all fields to update a user.");
-                return;
-            }
-
-            const updateData = { id: parseInt(id), name: name, email: email, age: parseInt(age) };
-
-            await fetch('http://localhost/my-restful-api/api/user/update.php', {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(updateData)
-            });
-
-            fetchUsers();
+        function switchTab(tab) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.form-container').forEach(f => f.classList.remove('active'));
+            document.querySelector(`.tab:nth-child(${tab === 'create' ? '1' : '2'})`).classList.add('active');
+            document.getElementById(`${tab}Form`).classList.add('active');
+            document.getElementById('result').innerHTML = '';
         }
 
-        async function deleteUser() {
-            const id = document.getElementById('deleteId').value;
-
-            if (!id) {
-                alert("Please enter a user ID to delete.");
-                return;
+        async function handleCreate(e) {
+            e.preventDefault();
+            const formData = new FormData();
+            
+            formData.append('url_slug', document.getElementById('urlSlug').value);
+            formData.append('text_content', document.getElementById('textContent').value);
+            formData.append('password', document.getElementById('password').value || '');
+            formData.append('expire_option', document.getElementById('expireOption').value);
+            
+            const files = document.getElementById('files').files;
+            for (let i = 0; i < files.length; i++) {
+                formData.append('files[]', files[i]);
             }
 
-            const deleteData = { id: parseInt(id) };
+            try {
+                const response = await fetch(API_URL, {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const result = await response.json();
+                displayResult(result);
+            } catch (error) {
+                displayError(error);
+            }
+        }
 
-            await fetch('http://localhost/my-restful-api/api/user/delete.php', {
-                method: 'DELETE',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(deleteData)
-            });
+        async function handleGet(e) {
+            e.preventDefault();
+            const urlSlug = document.getElementById('getUrlSlug').value;
+            const password = document.getElementById('getPassword').value;
 
-            fetchUsers();
+            try {
+                const url = new URL(API_URL);
+                url.searchParams.append('url_slug', urlSlug);
+                
+                const headers = { 'Content-Type': 'application/json' };
+                if (password) {
+                    headers['X-Clip-Password'] = password;
+                }
+
+                const response = await fetch(url, { headers });
+                const result = await response.json();
+                displayResult(result);
+            } catch (error) {
+                displayError(error);
+            }
+        }
+
+        function displayResult(result) {
+            let resultHtml = `<h3>Result:</h3><pre>${JSON.stringify(result, null, 2)}</pre>`;
+            
+            if (result.file_metadata) {
+                const files = JSON.parse(result.file_metadata);
+                resultHtml += '<div class="file-list"><h4>Files:</h4>';
+                files.forEach(file => {
+                    resultHtml += `
+                        <div class="file-item">
+                            <strong>${file.original_name}</strong> (${file.category})
+                            <br>
+                            <a href="${API_URL}?download=1&filename=${file.stored_name}" 
+                               target="_blank">Download</a>
+                        </div>`;
+                });
+                resultHtml += '</div>';
+            }
+            
+            document.getElementById('result').innerHTML = resultHtml;
+        }
+
+        function displayError(error) {
+            document.getElementById('result').innerHTML = `
+                <h3>Error:</h3>
+                <pre style="color: red">${error.message}</pre>`;
         }
     </script>
 </body>
-</html>
+</html> 

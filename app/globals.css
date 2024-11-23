@@ -70,3 +70,29 @@ body {
     @apply bg-background text-foreground;
   }
 }
+
+[data-color-mode="dark"] {
+  --md-bg-color: transparent !important;
+  --md-border-color: hsl(var(--border)) !important;
+  color-scheme: dark;
+}
+
+[data-color-mode="light"] {
+  --md-bg-color: transparent !important;
+  --md-border-color: hsl(var(--border)) !important;
+  color-scheme: light;
+}
+
+.w-md-editor {
+  background-color: transparent !important;
+}
+
+.w-md-editor-text-pre > code,
+.w-md-editor-text-input {
+  background-color: transparent !important;
+  color: inherit !important;
+}
+
+.wmde-markdown {
+  background-color: transparent !important;
+}
