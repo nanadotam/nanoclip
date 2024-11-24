@@ -10,20 +10,20 @@ export default function Contact() {
     { 
       icon: Github, 
       title: 'GitHub', 
-      description: 'Check out my open-source projects and contributions', 
+      description: 'Check out my projects', 
       href: 'https://github.com/nanadotam' 
     },
     { 
       icon: Linkedin, 
       title: 'LinkedIn', 
-      description: 'Connect with me professionally', 
-      href: 'https://www.linkedin.com/in/your-linkedin-profile' 
+      description: 'Connect with me', 
+      href: 'https://www.linkedin.com/in/nanaamoako/' 
     },
     { 
       icon: Globe, 
       title: 'Portfolio', 
       description: 'Explore my personal portfolio and projects', 
-      href: 'https://your-portfolio-url.com' 
+      href: 'https://nana-portfolio.netlify.app/' 
     },
   ]
 

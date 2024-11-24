@@ -5,7 +5,7 @@
 import { motion } from 'framer-motion';
 import Download from "./components/home/Download";
 import Upload from "./components/home/Upload";
-import TestConnection from '@/components/TestConnection';
+// import TestConnection from '@/components/TestConnection';
 import { FlipWords } from "@/components/ui/flip-words";
 
 const containerVariants = {
@@ -31,33 +31,63 @@ const itemVariants = {
   }
 };
 
+const backgroundElementVariants = {
+  animate: {
+    scale: [1, 1.1, 1],
+    opacity: [0.1, 0.2, 0.1],
+    transition: {
+      duration: 8,
+      repeat: Infinity,
+      ease: "easeInOut"
+    }
+  }
+};
+
 export default function Home() {
   return (
-    <motion.div 
-      className="min-h-screen w-full flex flex-col justify-center items-center px-4 py-8 md:py-12"
-      variants={containerVariants}
-      initial="hidden"
-      animate="visible"
-    >
-      <motion.h1 
-        className="font-weight-500 font-mona-sans text-3xl sm:text-4xl md:text-6xl lg:text-[6rem] tracking-tight text-center mb-6 md:mb-12"
-        variants={itemVariants}
-      >
-        <FlipWords
-          words={["Copy.", "Paste.", "Get."]}
-          duration={1200}
-          delay={800}
-          className="text-blue-500 font-medium"
-        />
-      </motion.h1>
+    <div className="relative min-h-screen w-full overflow-hidden">
       <motion.div 
-        className="w-full max-w-[80rem] flex flex-col md:flex-row justify-center items-center gap-4 md:gap-8 px-4"
-        variants={itemVariants}
+        className="absolute top-[-20%] left-[-10%] w-[40rem] h-[40rem] rounded-full bg-blue-500/5 blur-3xl"
+        variants={backgroundElementVariants}
+        animate="animate"
+      />
+      <motion.div 
+        className="absolute bottom-[-20%] right-[-10%] w-[35rem] h-[35rem] rounded-full bg-purple-500/5 blur-3xl"
+        variants={backgroundElementVariants}
+        animate="animate"
+      />
+      <motion.div 
+        className="absolute top-[30%] right-[20%] w-[25rem] h-[25rem] rounded-full bg-cyan-500/5 blur-3xl"
+        variants={backgroundElementVariants}
+        animate="animate"
+      />
+      
+      <motion.div 
+        className="relative min-h-screen w-full flex flex-col justify-center items-center px-4 py-8 md:py-12"
+        variants={containerVariants}
+        initial="hidden"
+        animate="visible"
       >
-        <Upload />
-        <Download />
+        <motion.h1 
+          className="font-weight-500 font-mona-sans text-3xl sm:text-4xl md:text-6xl lg:text-[6rem] tracking-tight text-center mb-6 md:mb-12"
+          variants={itemVariants}
+        >
+          <FlipWords
+            words={["Copy.", "Paste.", "Get."]}
+            duration={1200}
+            delay={800}
+            className="text-blue-500 font-medium"
+          />
+        </motion.h1>
+        <motion.div 
+          className="w-full max-w-[80rem] flex flex-col md:flex-row justify-center items-center gap-4 md:gap-8 px-4"
+          variants={itemVariants}
+        >
+          <Upload />
+          <Download />
+        </motion.div>
+        {/* <TestConnection /> */}
       </motion.div>
-      <TestConnection />
-    </motion.div>
+    </div>
   );
 }
