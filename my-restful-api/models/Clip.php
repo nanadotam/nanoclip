@@ -1,25 +1,41 @@
 <?php
 require_once __DIR__ . '/../config/FileConfig.php';
 
+/**
+ * Clip Class
+ * Handles all clip-related operations including CRUD, file management, and cleanup
+ * 
+ * @package NanoClip
+ */
 class Clip {
+    // Database connection and table name
     private $conn;
     private $table = 'clips';
 
+    /**
+     * Clip properties matching database schema
+     * @var mixed
+     */
     public $clip_id;
     public $url_slug;
-    public $content_type;
-    public $text_content;
-    public $file_url;
-    public $file_metadata;
-    public $password_hash;
-    public $created_at;
-    public $expires_at;
-    public $is_view_once;
+    public $content_type;    // Type of content: 'text' or 'file'
+    public $text_content;    // Stores text content if type is 'text'
+    public $file_url;        // Deprecated: kept for backward compatibility
+    public $file_metadata;   // JSON string containing file information
+    public $password_hash;   // Stores hashed password if clip is protected
+    public $created_at;      // Timestamp of creation
+    public $expires_at;      // Timestamp for automatic deletion
+    public $is_view_once;    // Boolean flag for single-view clips
 
     public function __construct($db) {
         $this->conn = $db;
     }
 
+    /**
+     * Read Single Clip Method
+     * Handles password protection and view-once functionality
+     * @param bool $include_password Whether to include password-protected content
+     */
     public function read_single($include_password = false) {
         $query = 'SELECT * FROM ' . $this->table . ' WHERE url_slug = ?';
         $stmt = $this->conn->prepare($query);
@@ -211,73 +227,101 @@ class Clip {
     }
 
     public function deleteExpiredClips() {
-        $this->conn->begin_transaction();
-        try {
-            // Get expired clips
-            $query = 'SELECT * FROM ' . $this->table . ' 
-                      WHERE (expires_at IS NOT NULL AND expires_at <= NOW())
-                      OR is_view_once = 1';
-                      
-            $stmt = $this->conn->prepare($query);
-            if (!$stmt->execute()) {
-                throw new Exception("Failed to query expired clips");
-            }
-            $result = $stmt->get_result();
-            
-            $deletedFiles = 0;
-            $errors = [];
-            
-            // Delete files first
-            while ($clip = $result->fetch_assoc()) {
+        // Get all expired clips (both file and text-only)
+        $query = "SELECT * FROM {$this->table} WHERE 
+                 (expires_at IS NOT NULL AND expires_at <= NOW()) OR
+                 (is_view_once = 1 AND viewed_at IS NOT NULL)";
+        
+        $result = $this->conn->query($query);
+        
+        if (!$result) {
+            error_log("Query failed: " . $this->conn->error);
+            return false;
+        }
+
+        $deletedFiles = 0;
+        $deletedClips = 0;
+        $errors = [];
+
+        while ($clip = $result->fetch_assoc()) {
+            try {
+                // Handle file-based clips
                 if ($clip['file_metadata']) {
                     $files = json_decode($clip['file_metadata'], true);
-                    if (!is_array($files)) {
-                        $errors[] = "Invalid file metadata for clip {$clip['url_slug']}";
-                        continue;
-                    }
-                    
-                    foreach ($files as $file) {
-                        if (!isset($file['stored_name'])) {
-                            $errors[] = "Missing stored_name in file metadata for clip {$clip['url_slug']}";
-                            continue;
-                        }
-                        
-                        $filepath = FileConfig::UPLOAD_DIR . $file['stored_name'];
-                        if (file_exists($filepath)) {
-                            if (unlink($filepath)) {
-                                $deletedFiles++;
-                            } else {
-                                $errors[] = "Failed to delete file: $filepath";
+                    if (is_array($files)) {
+                        foreach ($files as $file) {
+                            $filepath = FileConfig::UPLOAD_DIR . $file['stored_name'];
+                            if (file_exists($filepath)) {
+                                if (unlink($filepath)) {
+                                    $deletedFiles++;
+                                } else {
+                                    $errors[] = "Failed to delete file: {$file['stored_name']}";
+                                }
                             }
                         }
                     }
                 }
+                
+                // Delete the clip entry (whether it's text-only or has files)
+                $deleteQuery = "DELETE FROM {$this->table} WHERE id = ?";
+                $stmt = $this->conn->prepare($deleteQuery);
+                $stmt->bind_param('i', $clip['id']);
+                
+                if ($stmt->execute()) {
+                    $deletedClips++;
+                    error_log("Deleted clip: {$clip['url_slug']} " . 
+                             ($clip['file_metadata'] ? "(with files)" : "(text-only)"));
+                } else {
+                    $errors[] = "Failed to delete clip ID: {$clip['id']}";
+                }
+                
+                $stmt->close();
+                
+            } catch (Exception $e) {
+                $errors[] = "Error processing clip {$clip['id']}: " . $e->getMessage();
             }
-            
-            // Delete from database
-            $deleteQuery = 'DELETE FROM ' . $this->table . ' 
-                           WHERE (expires_at IS NOT NULL AND expires_at <= NOW())
-                           OR is_view_once = 1';
-                           
-            $deleteStmt = $this->conn->prepare($deleteQuery);
-            if (!$deleteStmt->execute()) {
-                throw new Exception("Failed to delete expired clips from database");
+        }
+
+        // Log cleanup results
+        error_log("Cleanup completed: Deleted $deletedFiles files and $deletedClips clips");
+        if (!empty($errors)) {
+            error_log("Cleanup errors: " . implode(", ", $errors));
+        }
+
+        return true;
+    }
+
+    private function cleanupOrphanedFiles() {
+        // 1. Get all stored filenames from database
+        $query = "SELECT file_metadata FROM {$this->table} WHERE file_metadata IS NOT NULL";
+        $result = $this->conn->query($query);
+        
+        $validFiles = [];
+        while ($row = $result->fetch_assoc()) {
+            $files = json_decode($row['file_metadata'], true);
+            if (is_array($files)) {
+                foreach ($files as $file) {
+                    $validFiles[] = $file['stored_name'];
+                }
             }
+        }
+
+        // 2. Scan upload directory
+        $uploadDir = FileConfig::UPLOAD_DIR;
+        $physicalFiles = scandir($uploadDir);
+        
+        // 3. Delete orphaned files
+        foreach ($physicalFiles as $file) {
+            if ($file === '.' || $file === '..') continue;
             
-            $deletedRows = $deleteStmt->affected_rows;
-            
-            // Log results
-            error_log("Cleanup completed: Deleted $deletedFiles files and $deletedRows database records");
-            if (!empty($errors)) {
-                error_log("Cleanup errors: " . implode(", ", $errors));
+            if (!in_array($file, $validFiles)) {
+                $filepath = $uploadDir . $file;
+                if (unlink($filepath)) {
+                    error_log("Deleted orphaned file: $file");
+                } else {
+                    error_log("Failed to delete orphaned file: $file");
+                }
             }
-            
-            $this->conn->commit();
-            return true;
-        } catch (Exception $e) {
-            $this->conn->rollback();
-            error_log("Cleanup error: " . $e->getMessage());
-            return false;
         }
     }
 

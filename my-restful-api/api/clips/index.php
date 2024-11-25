@@ -25,14 +25,11 @@ try {
     
     $clip = new Clip($db);
     
-    // Run background cleanup without blocking
-    register_shutdown_function(function() use ($clip) {
-        try {
-            $clip->backgroundCleanup();
-        } catch (Exception $e) {
-            error_log("Shutdown cleanup error: " . $e->getMessage());
-        }
-    });
+    // Start cleanup daemon if not running
+    if (!file_exists(__DIR__ . '/../../data/cleanup-daemon.pid')) {
+        $startupScript = __DIR__ . '/../../public/start-cleanup.php';
+        exec("php $startupScript > /dev/null 2>&1 &");
+    }
 
     function send_error($message, $code = 400) {
         http_response_code($code);
