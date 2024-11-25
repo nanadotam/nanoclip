@@ -126,7 +126,7 @@ export default function UploadPage() {
                     id="expireOption"
                     name="expireOption"
                     className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors"
-                    defaultValue="1d"
+                    defaultValue="1h"
                   >
                     <option value="view">Delete when viewed</option>
                     <option value="1m">1 minute</option>
@@ -134,8 +134,6 @@ export default function UploadPage() {
                     <option value="1h">1 hour</option>
                     <option value="5h">5 hours</option>
                     <option value="12h">12 hours</option>
-                    <option value="1d">1 day</option>
-                    <option value="1w">1 week</option>
                   </select>
                 </div>
               </div>
