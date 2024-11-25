@@ -9,25 +9,12 @@ export default function Download() {
   const router = useRouter();
 
   return (
-    <motion.div 
+    <div 
+      className="w-full md:w-[30rem] h-[20rem] md:h-[30rem] bg-secondary/50 backdrop-blur-sm border rounded-[16px] md:rounded-[24px] flex flex-col justify-center items-center gap-4 md:gap-6 relative overflow-hidden group cursor-pointer hover:bg-secondary/60 transition-colors"
       onClick={() => router.push('/download')}
-      className='w-full md:w-[30rem] h-[20rem] md:h-[30rem] bg-secondary border rounded-[16px] md:rounded-[24px] flex flex-col justify-center items-center gap-4 md:gap-6 relative overflow-hidden group cursor-pointer'
-      whileHover={{ 
-        scale: 1.02,
-        borderRadius: "24px",
-      }}
-      transition={{ 
-        duration: 0.3,
-        ease: [0.65, 0, 0.35, 1],
-        borderRadius: {
-          duration: 0.2,
-        }
-      }}
     >
-      <motion.div
-        className="absolute inset-0 bg-secondary/80 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
-        initial={false}
-      />
+      <div className="absolute inset-0 bg-gradient-to-br from-blue-500/20 to-cyan-500/20 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+      
       <motion.div
         className="relative z-10 flex flex-col items-center gap-6"
         whileHover={{ scale: 1.05 }}
@@ -38,6 +25,8 @@ export default function Download() {
           Download
         </p>
       </motion.div>
-    </motion.div>
+
+      <div className="pointer-events-none absolute inset-0 h-full bg-[radial-gradient(circle_at_50%_120%,rgba(120,119,198,0.3),rgba(255,255,255,0))]" />
+    </div>
   );
 }

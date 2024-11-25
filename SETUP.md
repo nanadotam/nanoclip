@@ -2,8 +2,7 @@
 
 ## Development Setup
 
-### Frontend (Next.js)
-```bash
+### Frontend (Next.js)```bash
 cd nanoclip
 npm install
 npm run dev
@@ -12,11 +11,11 @@ npm run dev
 
 ### Backend (FastAPI)
 ```bash
-cd backend
-python -m venv venv
-source venv/bin/activate  # Windows: .\venv\Scripts\activate
-pip install -r requirements.txt
-uvicorn main:app --reload
+# Option 1: Basic PHP server
+php -S localhost:8000
+
+# Option 2: Specify the directory and port (recommended)
+php -S localhost:8000 -t .
 ```
 - Runs on: http://localhost:8000
 

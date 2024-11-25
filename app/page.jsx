@@ -7,6 +7,8 @@ import Download from "./components/home/Download";
 import Upload from "./components/home/Upload";
 // import TestConnection from '@/components/TestConnection';
 import { FlipWords } from "@/components/ui/flip-words";
+import Onboarding from "./components/home/Onboarding";
+import { MagicCard } from "@/components/ui/magic-card"
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -46,6 +48,7 @@ const backgroundElementVariants = {
 export default function Home() {
   return (
     <div className="relative min-h-screen w-full overflow-hidden">
+      <Onboarding />
       <motion.div 
         className="absolute top-[-20%] left-[-10%] w-[40rem] h-[40rem] rounded-full bg-blue-500/5 blur-3xl"
         variants={backgroundElementVariants}
@@ -80,11 +83,30 @@ export default function Home() {
           />
         </motion.h1>
         <motion.div 
-          className="w-full max-w-[80rem] flex flex-col md:flex-row justify-center items-center gap-4 md:gap-8 px-4"
+          className="w-full max-w-[80rem] flex flex-col md:flex-row justify-center items-center gap-4 px-4"
           variants={itemVariants}
         >
-          <Upload />
-          <Download />
+          <div className="w-full md:hidden">
+            <Upload />
+          </div>
+          <div className="w-full md:hidden">
+            <Download />
+          </div>
+          
+          <div className="hidden md:flex justify-center gap-4 w-full">
+            <MagicCard 
+              className="w-[30rem] h-[30rem] bg-transparent border-none shadow-none"
+              onClick={() => {}}
+            >
+              <Upload />
+            </MagicCard>
+            <MagicCard 
+              className="w-[30rem] h-[30rem] bg-transparent border-none shadow-none"
+              onClick={() => {}}
+            >
+              <Download />
+            </MagicCard>
+          </div>
         </motion.div>
         {/* <TestConnection /> */}
       </motion.div>
