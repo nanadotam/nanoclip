@@ -13,6 +13,12 @@ require_once __DIR__ . '/../../config/Database.php';
 require_once __DIR__ . '/../../models/Clip.php';
 require_once __DIR__ . '/../../config/FileConfig.php';
 
+function send_error($message, $code = 400) {
+    http_response_code($code);
+    echo json_encode(['error' => $message]);
+    exit;
+}
+
 try {
     FileConfig::init();
     
@@ -29,12 +35,6 @@ try {
     if (!file_exists(__DIR__ . '/../../data/cleanup-daemon.pid')) {
         $startupScript = __DIR__ . '/../../public/start-cleanup.php';
         exec("php $startupScript > /dev/null 2>&1 &");
-    }
-
-    function send_error($message, $code = 400) {
-        http_response_code($code);
-        echo json_encode(['error' => $message]);
-        exit;
     }
 
     $method = $_SERVER['REQUEST_METHOD'];
