@@ -9,6 +9,7 @@ import Upload from "./components/home/Upload";
 import { FlipWords } from "@/components/ui/flip-words";
 import Onboarding from "./components/home/Onboarding";
 import { MagicCard } from "@/components/ui/magic-card"
+import AirShareCard from "./components/home/AirShare";
 
 const containerVariants = {
   hidden: { opacity: 0 },
@@ -83,29 +84,13 @@ export default function Home() {
           />
         </motion.h1>
         <motion.div 
-          className="w-full max-w-[80rem] flex flex-col md:flex-row justify-center items-center gap-4 px-4"
+          className="w-full max-w-[80rem] px-4 sm:px-6"
           variants={itemVariants}
         >
-          <div className="w-full md:hidden">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
             <Upload />
-          </div>
-          <div className="w-full md:hidden">
             <Download />
-          </div>
-          
-          <div className="hidden md:flex justify-center gap-4 w-full">
-            <MagicCard 
-              className="w-[30rem] h-[30rem] bg-transparent border-none shadow-none"
-              onClick={() => {}}
-            >
-              <Upload />
-            </MagicCard>
-            <MagicCard 
-              className="w-[30rem] h-[30rem] bg-transparent border-none shadow-none"
-              onClick={() => {}}
-            >
-              <Download />
-            </MagicCard>
+            <AirShareCard />
           </div>
         </motion.div>
         {/* <TestConnection /> */}

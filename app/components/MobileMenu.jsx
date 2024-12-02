@@ -23,6 +23,27 @@ export default function MobileMenu() {
           <NavigationMenu className="flex-col items-start w-full">
             <NavigationMenuList className="flex-col items-start space-y-2">
               <NavigationMenuItem className="w-full">
+                <Link href="/upload" legacyBehavior passHref>
+                  <NavigationMenuLink className={cn(navigationMenuTriggerStyle(), "w-full justify-start")}>
+                    Upload
+                  </NavigationMenuLink>
+                </Link>
+              </NavigationMenuItem>
+              <NavigationMenuItem className="w-full">
+                <Link href="/download" legacyBehavior passHref>
+                  <NavigationMenuLink className={cn(navigationMenuTriggerStyle(), "w-full justify-start")}>
+                    Download
+                  </NavigationMenuLink>
+                </Link>
+              </NavigationMenuItem>
+              <NavigationMenuItem className="w-full">
+                <Link href="/airshare" legacyBehavior passHref>
+                  <NavigationMenuLink className={cn(navigationMenuTriggerStyle(), "w-full justify-start")}>
+                    AirShare
+                  </NavigationMenuLink>
+                </Link>
+              </NavigationMenuItem>
+              <NavigationMenuItem className="w-full">
                 <Link href="/about" legacyBehavior passHref>
                   <NavigationMenuLink className={cn(navigationMenuTriggerStyle(), "w-full justify-start")}>
                     About

@@ -49,6 +49,14 @@ export default function Navbar() {
           </NavigationMenuItem>
 
           <NavigationMenuItem>
+            <Link href="/airshare" legacyBehavior passHref>
+              <NavigationMenuLink className={cn(navigationMenuTriggerStyle(), "px-6 hover:bg-blue-600/10 hover:text-blue-600 dark:hover:bg-cyan-400/10 dark:hover:text-cyan-400 backdrop-blur-sm")}>
+                AirShare
+              </NavigationMenuLink>
+            </Link>
+          </NavigationMenuItem>
+
+          <NavigationMenuItem>
             <NavigationMenuTrigger className="px-6 hover:bg-blue-600/10 hover:text-blue-600 dark:hover:bg-cyan-400/10 dark:hover:text-cyan-400 backdrop-blur-sm">More</NavigationMenuTrigger>
             <NavigationMenuContent>
               <motion.div 
