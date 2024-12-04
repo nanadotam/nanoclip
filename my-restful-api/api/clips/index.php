@@ -9,6 +9,7 @@ header("Access-Control-Allow-Methods: GET, POST, OPTIONS");
 header("Access-Control-Allow-Headers: Content-Type, Authorization, X-Clip-Password");
 header("Content-Type: application/json");
 
+require_once __DIR__ . '/../../config/config.php';
 require_once __DIR__ . '/../../config/Database.php';
 require_once __DIR__ . '/../../models/Clip.php';
 require_once __DIR__ . '/../../config/FileConfig.php';

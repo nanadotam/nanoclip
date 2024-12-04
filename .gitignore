@@ -74,3 +74,7 @@ sftp.json
 **/credentials.*.json
 **/client_secret*.json
 my-restful-api/data/last_cleanup.txt
+
+# Environment variables
+.env
+vendor/
