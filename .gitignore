@@ -81,3 +81,6 @@ vendor/
 
 # Firebase
 # firestore.js
+
+# Database
+db/webtech_fall2024_nana_amoako.sql

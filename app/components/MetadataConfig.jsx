@@ -3,7 +3,7 @@ import Head from 'next/head'
 export default function MetadataConfig({ 
   title = "NanoClip - Secure File & Text Sharing",
   description = "Share text and files securely with optional password protection and automatic expiration.",
-  image = "../og-image.png", // We'll create this image
+  image = "/og-image.png",
   url = "https://nanoclip.vercel.app"
 }) {
   return (
