@@ -78,3 +78,6 @@ my-restful-api/data/last_cleanup.txt
 # Environment variables
 .env
 vendor/
+
+# Firebase
+# firestore.js

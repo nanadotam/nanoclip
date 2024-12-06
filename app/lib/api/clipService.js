@@ -1,4 +1,6 @@
 import { ENDPOINTS } from '@/config/api';
+import { collection, getDocs } from "firebase/firestore";
+import { firestore } from '../../../firestore';  // Adjust the import path as needed
 
 class ClipService {
   async createClip(formData) {
@@ -48,6 +50,18 @@ class ClipService {
         throw new Error('Failed to download file');
       }
       return response.blob();
+    } catch (error) {
+      throw new Error(error.message);
+    }
+  }
+
+  async getClipsFromFirestore() {
+    try {
+      const querySnapshot = await getDocs(collection(firestore, 'clips'));
+      return querySnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
     } catch (error) {
       throw new Error(error.message);
     }
