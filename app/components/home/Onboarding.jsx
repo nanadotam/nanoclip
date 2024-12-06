@@ -9,7 +9,7 @@ import Cookies from 'js-cookie'
 
 const steps = [
   {
-    title: "Create a Clip",
+    title: "Welcome to NanoClip",
     description: "Choose a custom URL for your clip",
     Icon: ClipboardIcon,
     animation: (
