@@ -6,6 +6,7 @@ import { motion } from 'framer-motion';
 import ClipContent from '@/components/clips/ClipContent';
 import PasswordModal from '@/components/clips/PasswordModal';
 import { Card } from '@/components/ui/card';
+import clipService from '@/lib/api/clipService';
 
 export default function ClipPage() {
   const params = useParams();
@@ -15,58 +16,28 @@ export default function ClipPage() {
   const [error, setError] = useState('');
   const [isProtected, setIsProtected] = useState(false);
   const [showPasswordModal, setShowPasswordModal] = useState(false);
-  const [isViewOnce, setIsViewOnce] = useState(false);
 
   const fetchClip = async (password = null) => {
-    const headers = new Headers({
-      'Content-Type': 'application/json'
-    });
-    
-    if (password) {
-      headers.append('X-Clip-Password', password);
-    }
-
     try {
-      const response = await fetch(`http://localhost:8000/api/clips?url_slug=${params.clipId}`, {
-        headers
-      });
-
-      if (!response.ok) {
-        throw new Error('Failed to fetch clip');
-      }
-
-      const data = await response.json();
-
-      // If the clip is protected and we don't have a password
-      if (data.is_protected && !password) {
+      const result = await clipService.getClipBySlug(params.clipId, password);
+      
+      // Handle password protection
+      if (result.isProtected) {
         setIsProtected(true);
         setShowPasswordModal(true);
         setClipData(null);
-        setIsLoading(false);
         return { success: false, isProtected: true };
       }
 
-      // If we have content, it means password was correct
-      if (data.text_content || data.file_metadata) {
-        setClipData(data);
-        setIsProtected(false);
-        setShowPasswordModal(false);
-        setIsViewOnce(data.is_view_once === 1);
-        setIsLoading(false);
-        return { success: true, data };
-      }
-
-      // If we provided a password but still got protected response
-      if (password && data.is_protected) {
-        return { success: false, wrongPassword: true };
-      }
-
-      setClipData(data);
-      return { success: true, data };
+      setClipData(result);
+      setIsProtected(false);
+      setShowPasswordModal(false);
+      return { success: true, data: result };
     } catch (err) {
       setError(err.message);
-      setIsLoading(false);
       return { success: false, error: err.message };
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -74,25 +45,12 @@ export default function ClipPage() {
     fetchClip();
   }, [params.clipId]);
 
-  useEffect(() => {
-    if (isViewOnce && clipData) {
-      const timer = setTimeout(() => {
-        router.push('/');
-      }, 30000); // 30 seconds viewing time
-
-      return () => clearTimeout(timer);
-    }
-  }, [isViewOnce, clipData]);
-
   const handlePasswordVerification = async (password) => {
     setIsLoading(true);
     try {
       const result = await fetchClip(password);
       if (!result.success) {
-        if (result.wrongPassword) {
-          return "Invalid password. Please try again.";
-        }
-        return "Failed to verify password. Please try again.";
+        return "Invalid password. Please try again.";
       }
       return null;
     } catch (err) {
@@ -132,16 +90,7 @@ export default function ClipPage() {
             Loading...
           </Card>
         ) : clipData ? (
-          <>
-            <ClipContent clipData={clipData} />
-            {isViewOnce && (
-              <Card className="mt-4 p-4 bg-yellow-500/10 border-yellow-500">
-                <p className="text-center text-sm">
-                  This clip will be deleted after viewing. You have 30 seconds to view it.
-                </p>
-              </Card>
-            )}
-          </>
+          <ClipContent clipData={clipData} />
         ) : !isProtected && (
           <Card className="p-6 text-center text-muted-foreground">
             This clip has no content

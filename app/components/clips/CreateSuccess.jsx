@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 
 export default function CreateSuccess({ clipSlug, onClose }) {
-  const clipUrl = `nanoclip.com/clips/${clipSlug}`;
+  const clipUrl = `nanoclip.vercel.app/clips/${clipSlug}`;
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {

@@ -12,6 +12,7 @@ import { useRouter } from 'next/navigation';
 import clipService from '@/lib/api/clipService';
 import CreateSuccess from '@/components/clips/CreateSuccess';
 import { useTheme } from "next-themes";
+import { PasswordInput } from '@/components/ui/password-input';
 
 export default function UploadPage() {
   const router = useRouter();
@@ -41,26 +42,16 @@ export default function UploadPage() {
     setIsLoading(true);
     setError('');
 
-    const formData = new FormData();
-    formData.append('url_slug', e.target.urlSlug.value);
-    formData.append('text_content', text);
-    formData.append('password', e.target.password.value || '');
-    formData.append('expire_option', e.target.expireOption.value);
-    
-    files.forEach(file => {
-      formData.append('files[]', file);
-    });
-
     try {
-      const response = await fetch('http://localhost:8000/api/clips', {
-        method: 'POST',
-        body: formData
-      });
-      
-      const result = await response.json();
-      if (result.error) {
-        throw new Error(result.error);
-      }
+      const clipData = {
+        url_slug: e.target.urlSlug.value,
+        text_content: text,
+        password: e.target.password.value || null,
+        expire_option: e.target.expireOption.value,
+        files: files
+      };
+
+      const result = await clipService.createClip(clipData);
       
       setCreatedClipSlug(result.url_slug);
       setShowSuccess(true);
@@ -90,7 +81,7 @@ export default function UploadPage() {
                   </label>
                   <div className="flex items-center gap-2">
                     <span className="text-muted-foreground whitespace-nowrap">
-                      nanoclip.com/clips/
+                      nanoclip.vercel.app/clips/
                     </span>
                     <Input
                       id="urlSlug"
@@ -110,10 +101,9 @@ export default function UploadPage() {
                   <label htmlFor="password" className="text-sm font-medium mb-2 block">
                     Password Protection (Optional)
                   </label>
-                  <Input
+                  <PasswordInput
                     id="password"
                     name="password"
-                    type="password"
                     placeholder="Enter password to protect clip"
                     className="flex-1"
                   />
@@ -126,16 +116,14 @@ export default function UploadPage() {
                     id="expireOption"
                     name="expireOption"
                     className="flex h-9 w-full rounded-md border border-input bg-background px-3 py-1 text-sm shadow-sm transition-colors"
-                    defaultValue="1d"
+                    defaultValue="1m"
                   >
-                    <option value="view">Delete when viewed</option>
                     <option value="1m">1 minute</option>
                     <option value="10m">10 minutes</option>
                     <option value="1h">1 hour</option>
                     <option value="5h">5 hours</option>
                     <option value="12h">12 hours</option>
                     <option value="1d">1 day</option>
-                    <option value="1w">1 week</option>
                   </select>
                 </div>
               </div>

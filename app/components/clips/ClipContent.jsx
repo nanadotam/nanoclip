@@ -61,11 +61,11 @@ export default function ClipContent({ clipData }) {
           </>
         )}
 
-        {clipData.file_metadata && (
+        {clipData.file_metadata && clipData.file_metadata.length > 0 && (
           <div className="space-y-4">
             <h2 className="text-xl font-semibold">Attached Files</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-              {JSON.parse(clipData.file_metadata).map((file, index) => (
+              {clipData.file_metadata.map((file, index) => (
                 <motion.div
                   key={index}
                   initial={{ opacity: 0, y: 20 }}
@@ -82,7 +82,7 @@ export default function ClipContent({ clipData }) {
                       </div>
                       <Button 
                         size="sm"
-                        onClick={() => window.open(`http://localhost:8000/api/clips?download=1&filename=${file.stored_name}`, '_blank')}
+                        onClick={() => window.open(file.url, '_blank')}
                       >
                         Download
                       </Button>
@@ -92,12 +92,6 @@ export default function ClipContent({ clipData }) {
               ))}
             </div>
           </div>
-        )}
-
-        {!clipData.text_content && !clipData.file_metadata && (
-          <Card className="p-6 text-center">
-            <p className="text-muted-foreground">This clip has no content</p>
-          </Card>
         )}
       </motion.div>
     </div>

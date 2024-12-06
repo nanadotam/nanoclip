@@ -3,6 +3,7 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
+import { Button } from "./button";
 
 export function PlaceholdersAndVanishInput({
   placeholders,
@@ -13,6 +14,7 @@ export function PlaceholdersAndVanishInput({
   const [currentPlaceholder, setCurrentPlaceholder] = useState(0);
   const [value, setValue] = useState("");
   const [animating, setAnimating] = useState(false);
+  const [displayValue, setDisplayValue] = useState("");
   
   const intervalRef = useRef(null);
   const canvasRef = useRef(null);
@@ -20,22 +22,25 @@ export function PlaceholdersAndVanishInput({
   const inputRef = useRef(null);
 
   // Placeholder rotation logic
-  const startAnimation = () => {
+  useEffect(() => {
     intervalRef.current = setInterval(() => {
       setCurrentPlaceholder((prev) => (prev + 1) % placeholders.length);
     }, 3000);
-  };
+    return () => clearInterval(intervalRef.current);
+  }, [placeholders.length]);
 
+  // Handle text animation when typing
   useEffect(() => {
-    startAnimation();
-    return () => {
-      if (intervalRef.current) {
-        clearInterval(intervalRef.current);
-      }
-    };
-  }, [placeholders]);
+    if (value.length > displayValue.length) {
+      const newChar = value[value.length - 1];
+      setTimeout(() => {
+        setDisplayValue(prev => prev + newChar);
+        draw();
+      }, 1000);
+    }
+  }, [value]);
 
-  // Canvas drawing and animation logic
+  // Canvas drawing logic
   const draw = useCallback(() => {
     if (!inputRef.current || !canvasRef.current) return;
     const canvas = canvasRef.current;
@@ -48,7 +53,7 @@ export function PlaceholdersAndVanishInput({
     const computedStyles = getComputedStyle(inputRef.current);
     ctx.font = `${parseFloat(computedStyles.fontSize) * 2}px ${computedStyles.fontFamily}`;
     ctx.fillStyle = "#FFF";
-    ctx.fillText(value, 16, 40);
+    ctx.fillText(displayValue, 16, 40);
 
     const imageData = ctx.getImageData(0, 0, 800, 800);
     const newData = [];
@@ -58,21 +63,16 @@ export function PlaceholdersAndVanishInput({
         const i = (y * 800 + x) * 4;
         if (imageData.data[i] > 0) {
           newData.push({
-            x,
-            y,
+            x, y,
             r: 1,
-            color: `rgba(${imageData.data[i]}, ${imageData.data[i + 1]}, ${imageData.data[i + 2]}, ${imageData.data[i + 3]})`,
+            color: `rgba(${imageData.data[i]}, ${imageData.data[i + 1]}, ${imageData.data[i + 2]}, ${imageData.data[i + 3]})`
           });
         }
       }
     }
 
     newDataRef.current = newData;
-  }, [value]);
-
-  useEffect(() => {
-    draw();
-  }, [value, draw]);
+  }, [displayValue]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -82,10 +82,10 @@ export function PlaceholdersAndVanishInput({
     if (value) {
       const maxX = Math.max(...newDataRef.current.map(p => p.x));
       animate(maxX);
-      
-      // Wait for animation to complete before submitting
       await new Promise(resolve => setTimeout(resolve, animationDuration));
-      onSubmit && onSubmit(value);
+      onSubmit(value);
+      setValue("");
+      setDisplayValue("");
     }
   };
 
@@ -119,7 +119,6 @@ export function PlaceholdersAndVanishInput({
       if (newDataRef.current.length > 0 && elapsed < animationDuration) {
         requestAnimationFrame(() => animateFrame(pos - particleSpeed));
       } else {
-        setValue("");
         setAnimating(false);
       }
     };
@@ -136,32 +135,39 @@ export function PlaceholdersAndVanishInput({
           animating ? "opacity-100" : "opacity-0"
         )}
       />
-      <input
-        ref={inputRef}
-        type="password"
-        value={value}
-        onChange={(e) => {
-          if (!animating) {
-            setValue(e.target.value);
-          }
-        }}
-        className={cn(
-          "w-full text-base bg-white/5 border border-neutral-200 dark:border-neutral-800 px-4 py-2 rounded-lg",
-          animating && "text-transparent"
-        )}
-      />
-      <AnimatePresence mode="wait">
-        {!value && (
-          <motion.p
-            initial={{ opacity: 0, y: 5 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -5 }}
-            className="absolute inset-0 flex items-center px-4 pointer-events-none text-neutral-500"
-          >
-            {placeholders[currentPlaceholder]}
-          </motion.p>
-        )}
-      </AnimatePresence>
+      <div className="flex gap-2">
+        <div className="relative flex-1">
+          <input
+            ref={inputRef}
+            type="text"
+            value={value}
+            onChange={(e) => {
+              if (!animating) {
+                setValue(e.target.value);
+              }
+            }}
+            className={cn(
+              "w-full text-base bg-white/5 border border-neutral-200 dark:border-neutral-800 px-4 py-2 rounded-lg",
+              animating && "text-transparent"
+            )}
+          />
+          <AnimatePresence mode="wait">
+            {!value && (
+              <motion.p
+                initial={{ opacity: 0, y: 5 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -5 }}
+                className="absolute inset-0 flex items-center px-4 pointer-events-none text-neutral-500"
+              >
+                {placeholders[currentPlaceholder]}
+              </motion.p>
+            )}
+          </AnimatePresence>
+        </div>
+        <Button type="submit" disabled={animating}>
+          Verify
+        </Button>
+      </div>
     </form>
   );
 } 
