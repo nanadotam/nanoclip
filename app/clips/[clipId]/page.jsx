@@ -7,6 +7,7 @@ import ClipContent from '@/components/clips/ClipContent';
 import PasswordModal from '@/components/clips/PasswordModal';
 import { Card } from '@/components/ui/card';
 import clipService from '@/lib/api/clipService';
+import MetadataConfig from '@/components/MetadataConfig';
 
 export default function ClipPage() {
   const params = useParams();
@@ -72,6 +73,14 @@ export default function ClipPage() {
 
   return (
     <>
+      <MetadataConfig
+        title={`NanoClip - ${clipData?.content_type === 'file' ? 'File Share' : 'Text Share'}`}
+        description={
+          clipData?.isProtected 
+            ? "This content is password protected"
+            : clipData?.text_content?.substring(0, 160) || "Shared content via NanoClip"
+        }
+      />
       {isProtected && showPasswordModal && (
         <PasswordModal
           onVerify={handlePasswordVerification}

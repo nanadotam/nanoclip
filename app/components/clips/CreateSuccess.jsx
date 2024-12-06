@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Copy, Check } from 'lucide-react';
+import { Copy, Check, ExternalLink } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
@@ -12,7 +12,6 @@ export default function CreateSuccess({ clipSlug, onClose }) {
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
-    // Trigger confetti on component mount
     confetti({
       particleCount: 100,
       spread: 70,
@@ -28,6 +27,10 @@ export default function CreateSuccess({ clipSlug, onClose }) {
     } catch (err) {
       console.error('Failed to copy:', err);
     }
+  };
+
+  const openInNewTab = () => {
+    window.open(`https://${clipUrl}`, '_blank');
   };
 
   return (
@@ -56,18 +59,28 @@ export default function CreateSuccess({ clipSlug, onClose }) {
             <code className="block w-full p-4 bg-muted rounded-lg font-mono text-sm break-all">
               {clipUrl}
             </code>
-            <Button
-              variant="ghost"
-              size="sm"
-              className="absolute right-2 top-1/2 -translate-y-1/2"
-              onClick={copyToClipboard}
-            >
-              {copied ? (
-                <Check className="h-4 w-4 text-green-600" />
-              ) : (
-                <Copy className="h-4 w-4" />
-              )}
-            </Button>
+            <div className="absolute right-2 top-1/2 -translate-y-1/2 flex gap-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={copyToClipboard}
+                title="Copy to clipboard"
+              >
+                {copied ? (
+                  <Check className="h-4 w-4 text-green-600" />
+                ) : (
+                  <Copy className="h-4 w-4" />
+                )}
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={openInNewTab}
+                title="Open in new tab"
+              >
+                <ExternalLink className="h-4 w-4" />
+              </Button>
+            </div>
           </div>
         </motion.div>
 

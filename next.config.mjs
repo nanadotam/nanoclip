@@ -9,6 +9,19 @@ const nextConfig = {
     REACT_APP_FIREBASE_MESSAGING_SENDER_ID: process.env.REACT_APP_FIREBASE_MESSAGING_SENDER_ID,
     REACT_APP_FIREBASE_APP_ID: process.env.REACT_APP_FIREBASE_APP_ID,
     REACT_APP_FIREBASE_MEASUREMENT_ID: process.env.REACT_APP_FIREBASE_MEASUREMENT_ID
+  },
+  experimental: {
+    scrollRestoration: true,
+  },
+  images: {
+    domains: ['firebasestorage.googleapis.com'],
+  },
+  webpack: (config) => {
+    config.resolve.fallback = { fs: false, net: false, tls: false };
+    return config;
+  },
+  onError: (error) => {
+    console.error('Next.js error:', error);
   }
 };
 

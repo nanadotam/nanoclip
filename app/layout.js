@@ -23,8 +23,29 @@ const monaSans = localFont({
 });
 
 export const metadata = {
-  title: "NanoClip",
-  description: "Copy. Paste. Get.",
+  title: "NanoClip - Secure File & Text Sharing",
+  description: "Share text and files securely with optional password protection and automatic expiration.",
+  openGraph: {
+    title: "NanoClip - Secure File & Text Sharing",
+    description: "Share text and files securely with optional password protection and automatic expiration.",
+    url: "https://nanoclip.vercel.app",
+    siteName: "NanoClip",
+    images: [
+      {
+        url: "./og-image.png",
+        width: 1200,
+        height: 630,
+      },
+    ],
+    locale: "en_US",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "NanoClip - Secure File & Text Sharing",
+    description: "Share text and files securely with optional password protection and automatic expiration.",
+    images: ["./og-image.png"],
+  },
 };
 
 export default function RootLayout({ children }) {
@@ -35,6 +56,7 @@ export default function RootLayout({ children }) {
           attribute="class"
           defaultTheme="dark"
           enableSystem={true}
+          suppressHydrationWarning
         >
           <div className="fixed inset-0 -z-10 bg-[radial-gradient(45%_25%_at_50%_50%,rgba(56,189,248,0.05),rgba(56,189,248,0))]" />
           <Navbar />

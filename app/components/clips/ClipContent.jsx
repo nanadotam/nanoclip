@@ -2,16 +2,24 @@
 
 import { useTheme } from "next-themes";
 import { motion } from 'framer-motion';
-import { Copy, Check } from 'lucide-react';
+import { Copy, Check, Download, Eye } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { useState, useEffect } from 'react';
 import MDPreview from './MDPreview';
+import Image from 'next/image';
+
+const isImageFile = (filename) => {
+  const imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'webp', 'ico'];
+  const extension = filename.split('.').pop().toLowerCase();
+  return imageExtensions.includes(extension);
+};
 
 export default function ClipContent({ clipData }) {
   const [copied, setCopied] = useState(false);
   const { theme } = useTheme();
   const [mounted, setMounted] = useState(false);
+  const [showPreview, setShowPreview] = useState({});
 
   useEffect(() => {
     setMounted(true);
@@ -27,6 +35,13 @@ export default function ClipContent({ clipData }) {
     } catch (err) {
       console.error('Failed to copy:', err);
     }
+  };
+
+  const togglePreview = (fileIndex) => {
+    setShowPreview(prev => ({
+      ...prev,
+      [fileIndex]: !prev[fileIndex]
+    }));
   };
 
   return (
@@ -72,7 +87,7 @@ export default function ClipContent({ clipData }) {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: index * 0.1 }}
                 >
-                  <Card className="p-4">
+                  <Card className="p-4 space-y-4">
                     <div className="flex items-center justify-between gap-4">
                       <div className="min-w-0">
                         <p className="font-medium truncate">{file.original_name}</p>
@@ -80,13 +95,39 @@ export default function ClipContent({ clipData }) {
                           ({(file.size / 1024).toFixed(2)} KB)
                         </p>
                       </div>
-                      <Button 
-                        size="sm"
-                        onClick={() => window.open(file.url, '_blank')}
-                      >
-                        Download
-                      </Button>
+                      <div className="flex gap-2">
+                        {isImageFile(file.original_name) && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => togglePreview(index)}
+                          >
+                            <Eye className="h-4 w-4" />
+                          </Button>
+                        )}
+                        <Button 
+                          size="sm"
+                          onClick={() => window.open(file.url, '_blank')}
+                        >
+                          <Download className="h-4 w-4" />
+                        </Button>
+                      </div>
                     </div>
+                    
+                    {isImageFile(file.original_name) && showPreview[index] && (
+                      <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: 'auto' }}
+                        className="relative aspect-video rounded-lg overflow-hidden"
+                      >
+                        <Image
+                          src={file.url}
+                          alt={file.original_name}
+                          fill
+                          className="object-contain"
+                        />
+                      </motion.div>
+                    )}
                   </Card>
                 </motion.div>
               ))}
