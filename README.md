@@ -14,7 +14,7 @@ NanoClip is a modern, fast, and secure clipboard sharing solution inspired by cl
 
 1. Clone the repository
 ```bash
-git clone https://github.com/yourusername/nanoclip.git
+git clone https://github.com/nanadotam/nanoclip.git
 cd nanoclip
 ```
 
@@ -123,4 +123,4 @@ npm run format       # Format code with Prettier
 - UI components from [shadcn/ui](https://ui.shadcn.com/)
 - Animations powered by [Framer Motion](https://www.framer.com/motion/)
 
-Made with ❤️ by Nana Amoako# nanoclip
+Made with ❤️ by Nana Amoako
