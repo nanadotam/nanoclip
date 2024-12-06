@@ -22,8 +22,8 @@ export default function HowItWorks() {
       id: 'create',
       icon: Link,
       title: 'Create a Clip',
-      description: 'Go to nanoclip.com/your-clip-name to create a new clip. Choose any name you like!',
-      example: 'https://nanoclip.com/your-clip-name',
+      description: 'Go to nanoclip.vercel.app/clips/your-clip-name to create a new clip. Choose any name you like!',
+      example: 'https://nanoclip.vercel.app/clips/your-clip-name',
     },
     {
       id: 'add',
@@ -44,7 +44,7 @@ export default function HowItWorks() {
       icon: Smartphone,
       title: 'Share Easily',
       description: 'Share the clip URL with others for quick and easy content sharing.',
-      example: 'https://nanoclip.com/your-clip-name',
+      example: 'https://nanoclip.vercel.app/clips/your-clip-name',
     },
   ]
 
@@ -150,7 +150,7 @@ export default function HowItWorks() {
                 whileHover={{ x: 5 }}
                 transition={{ duration: 0.2 }}
               >
-                Access clips by simply going to nanoclip.com/clipname
+                Access clips by simply going to nanoclip.vercel.app/clips/clipname
               </motion.li>
               <motion.li
                 whileHover={{ x: 5 }}

@@ -39,7 +39,7 @@ export default function DownloadPage() {
             </CardHeader>
             <CardContent>
               <CardDescription>
-                Simply enter your clip name after nanoclip.com/clips/ to access your content instantly
+                Simply enter your clip name after nanoclip.vercel.app/clips/ to access your content instantly
               </CardDescription>
             </CardContent>
           </Card>

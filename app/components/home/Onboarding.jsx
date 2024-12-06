@@ -22,7 +22,7 @@ const steps = [
         <motion.div
           className="w-3/4 bg-background rounded border border-border p-3 overflow-hidden flex items-center gap-2 text-muted-foreground"
         >
-          <span>nanoclip.com/clips/</span>
+          <span>nanoclip.vercel.app/clips/</span>
           <motion.span
             animate={{ opacity: [1, 0.5, 1] }}
             transition={{ repeat: Infinity, duration: 1.5 }}
@@ -81,7 +81,7 @@ const steps = [
           <motion.div
             className="flex items-center gap-2 text-muted-foreground bg-background rounded border border-border p-2"
           >
-            <span>nanoclip.com/clips/</span>
+            <span>nanoclip.vercel.app/clips/</span>
             <motion.span
               animate={{ opacity: [1, 0.5, 1] }}
               transition={{ repeat: Infinity, duration: 1.5 }}

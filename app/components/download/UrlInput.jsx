@@ -28,7 +28,7 @@ export default function UrlInput() {
         <div className="flex flex-col sm:flex-row items-center gap-2">
           <div className="flex-1 w-full flex flex-col sm:flex-row items-center gap-2">
             <span className="text-foreground whitespace-nowrap font-mono text-sm sm:text-base w-full sm:w-auto text-center sm:text-left">
-              nanoclip.com/clips/
+              nanoclip.vercel.app/clips/
             </span>
             <div className="relative flex-1 w-full">
               <Input
