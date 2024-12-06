@@ -32,7 +32,7 @@ export const metadata = {
     siteName: "NanoClip",
     images: [
       {
-        url: "./og-image.png",
+        url: "/og-image.png",
         width: 1200,
         height: 630,
       },
@@ -44,7 +44,7 @@ export const metadata = {
     card: "summary_large_image",
     title: "NanoClip - Secure File & Text Sharing",
     description: "Share text and files securely with optional password protection and automatic expiration.",
-    images: ["./og-image.png"],
+    images: ["/og-image.png"],
   },
 };
 
