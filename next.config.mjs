@@ -15,13 +15,16 @@ const nextConfig = {
   },
   images: {
     domains: ['firebasestorage.googleapis.com'],
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: '**',
+      },
+    ],
   },
   webpack: (config) => {
     config.resolve.fallback = { fs: false, net: false, tls: false };
     return config;
-  },
-  onError: (error) => {
-    console.error('Next.js error:', error);
   }
 };
 

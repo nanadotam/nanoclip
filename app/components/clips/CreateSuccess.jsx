@@ -30,7 +30,7 @@ export default function CreateSuccess({ clipSlug, onClose }) {
   };
 
   const openInNewTab = () => {
-    window.open(`https://${clipUrl}`, '_blank');
+    window.open(`${clipUrl}`, '_blank');
   };
 
   return (
@@ -55,36 +55,42 @@ export default function CreateSuccess({ clipSlug, onClose }) {
             Your clip is now available at:
           </p>
 
-          <div className="relative">
-            <code className="block w-full p-4 bg-muted rounded-lg font-mono text-sm break-all">
-              {clipUrl}
-            </code>
-            <div className="absolute right-2 top-1/2 -translate-y-1/2 flex gap-2">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={copyToClipboard}
-                title="Copy to clipboard"
-              >
-                {copied ? (
+          <code className="block w-full p-4 bg-muted rounded-lg font-mono text-sm break-all">
+            {clipUrl}
+          </code>
+
+          <div className="flex justify-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={copyToClipboard}
+              className="flex items-center gap-2"
+            >
+              {copied ? (
+                <>
                   <Check className="h-4 w-4 text-green-600" />
-                ) : (
+                  Copied!
+                </>
+              ) : (
+                <>
                   <Copy className="h-4 w-4" />
-                )}
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={openInNewTab}
-                title="Open in new tab"
-              >
-                <ExternalLink className="h-4 w-4" />
-              </Button>
-            </div>
+                  Copy URL
+                </>
+              )}
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={openInNewTab}
+              className="flex items-center gap-2"
+            >
+              <ExternalLink className="h-4 w-4" />
+              Open in New Tab
+            </Button>
           </div>
         </motion.div>
 
-        <div className="flex justify-end gap-4">
+        <div className="flex justify-end">
           <Button onClick={onClose}>
             Close
           </Button>
