@@ -3,29 +3,36 @@ import type { NextRequest } from 'next/server';
 import { jwtVerify } from 'jose';
 
 export async function middleware(request: NextRequest) {
-  const isAdminPath = request.nextUrl.pathname.startsWith('/admin');
-  const isLoginPath = request.nextUrl.pathname === '/admin/login';
-  const token = request.cookies.get('admin_token')?.value;
+  // Get the pathname
+  const path = request.nextUrl.pathname;
 
-  // Allow access to login page if not authenticated
-  if (isLoginPath) {
-    if (token) {
-      return NextResponse.redirect(new URL('/admin', request.url));
-    }
+  // Allow access to login page
+  if (path === '/admin/login') {
     return NextResponse.next();
   }
 
-  // Protect admin routes
-  if (isAdminPath) {
+  // Check for admin token on protected routes
+  if (path.startsWith('/admin')) {
+    const token = request.cookies.get('admin_token')?.value;
+
     if (!token) {
       return NextResponse.redirect(new URL('/admin/login', request.url));
     }
 
     try {
-      const JWT_SECRET = process.env.JWT_SECRET || '';
+      const JWT_SECRET = process.env.JWT_SECRET;
+      
+      // Add validation for JWT_SECRET
+      if (!JWT_SECRET) {
+        console.error('JWT_SECRET is not configured');
+        return NextResponse.redirect(new URL('/admin/login', request.url));
+      }
+
       await jwtVerify(token, new TextEncoder().encode(JWT_SECRET));
       return NextResponse.next();
-    } catch {
+    } catch (error) {
+      // Add specific error logging
+      console.error('JWT verification failed:', error);
       return NextResponse.redirect(new URL('/admin/login', request.url));
     }
   }
@@ -34,5 +41,7 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: '/admin/:path*',
+  matcher: [
+    '/admin/:path*'  // Match all admin routes
+  ]
 }; 

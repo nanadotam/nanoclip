@@ -1,6 +1,6 @@
+import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
 import { authService } from '../../../../lib/services/authService';
-import { collection, getDocs, query, where } from "firebase/firestore";
 
 export async function POST(request) {
   try {
@@ -21,6 +21,7 @@ export async function POST(request) {
       { status: 200 }
     );
 
+    // Set both the JWT token and session cookie
     response.cookies.set({
       name: 'admin_token',
       value: token,
@@ -28,7 +29,7 @@ export async function POST(request) {
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'strict',
       path: '/',
-      maxAge: 60 * 60 * 24
+      maxAge: 60 * 60 * 24 // 24 hours
     });
 
     return response;
@@ -41,24 +42,32 @@ export async function POST(request) {
   }
 }
 
-export async function GET(request) {
-  const token = request.cookies.get('admin_token')?.value;
-  
-  if (!token) {
-    return NextResponse.json(
-      { error: 'Unauthorized' },
-      { status: 401 }
-    );
-  }
+export async function GET() {
+  try {
+    // Get cookies and await it
+    const cookieStore = await cookies();
+    const token = cookieStore.get('admin_token')?.value;
 
-  const payload = await authService.verifyToken(token);
-  
-  if (!payload) {
-    return NextResponse.json(
-      { error: 'Invalid token' },
-      { status: 401 }
-    );
-  }
+    if (!token) {
+      return NextResponse.json({ authenticated: false }, { status: 401 });
+    }
 
-  return NextResponse.json({ authenticated: true });
+    // Verify the JWT token
+    const payload = await authService.verifyToken(token);
+    
+    if (!payload) {
+      return NextResponse.json({ authenticated: false }, { status: 401 });
+    }
+
+    return NextResponse.json({ 
+      authenticated: true,
+      user: {
+        email: payload.email,
+        role: payload.role
+      }
+    }, { status: 200 });
+  } catch (error) {
+    console.error('Auth verification error:', error);
+    return NextResponse.json({ authenticated: false }, { status: 401 });
+  }
 } 

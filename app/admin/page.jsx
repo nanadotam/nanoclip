@@ -15,7 +15,8 @@ import {
   AlertTriangle, 
   Database, 
   FileType, 
-  TrendingUp 
+  TrendingUp, 
+  LogOut 
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
@@ -49,15 +50,36 @@ export default function AdminDashboard() {
   useEffect(() => {
     if (!mounted) return;
 
-    const checkAuthAndFetchStats = async () => {
+    const checkAuth = async () => {
       try {
-        // Check auth
         const authResponse = await fetch('/api/admin/auth');
+        
         if (!authResponse.ok) {
-          router.push('/admin/login');
+          window.location.replace('/admin/login');
           return;
         }
 
+        const authData = await authResponse.json();
+        if (!authData.authenticated) {
+          window.location.replace('/admin/login');
+          return;
+        }
+
+        setIsLoading(false);
+      } catch (err) {
+        console.error('Auth check failed:', err);
+        window.location.replace('/admin/login');
+      }
+    };
+
+    checkAuth();
+  }, [mounted]);
+
+  useEffect(() => {
+    if (!mounted) return;
+
+    const fetchStats = async () => {
+      try {
         // Fetch stats
         const statsResponse = await fetch('/api/admin/stats');
         if (!statsResponse.ok) {
@@ -76,16 +98,24 @@ export default function AdminDashboard() {
         setTrends(trendsData);
       } catch (err) {
         setError(err.message);
-      } finally {
-        setIsLoading(false);
       }
     };
 
-    checkAuthAndFetchStats();
-  }, [router, mounted]);
+    fetchStats();
+  }, [mounted]);
 
   const handleCleanup = () => {
     router.push('/admin/cleanup');
+  };
+
+  const handleLogout = async () => {
+    try {
+      await fetch('/api/admin/logout', { method: 'POST' });
+      // Force a hard redirect to the login page
+      window.location.href = '/admin/login';
+    } catch (error) {
+      console.error('Logout failed:', error);
+    }
   };
 
   // Don't render anything until mounted
@@ -112,7 +142,17 @@ export default function AdminDashboard() {
         animate={{ opacity: 1, y: 0 }}
         className="space-y-8"
       >
-        <h1 className="text-3xl font-bold">Admin Dashboard</h1>
+        <div className="flex justify-between items-center">
+          <h1 className="text-3xl font-bold">Admin Dashboard</h1>
+          <Button 
+            variant="destructive" 
+            onClick={handleLogout}
+            className="flex items-center gap-2"
+          >
+            <LogOut className="w-4 h-4" />
+            Logout
+          </Button>
+        </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           <Card>
@@ -185,6 +225,23 @@ export default function AdminDashboard() {
                 >
                   <Users className="w-4 h-4 mr-2" />
                   Manage Users
+                </Button>
+                <Button 
+                  variant="destructive" 
+                  className="w-full"
+                  onClick={async () => {
+                    try {
+                      await fetch('/api/admin/logout', { method: 'POST' });
+                      // Force a hard redirect to the login page
+                      window.location.href = '/admin/login';
+                      // Alternative: router.replace('/admin/login');
+                    } catch (error) {
+                      console.error('Logout failed:', error);
+                    }
+                  }}
+                >
+                  <LogOut className="w-4 h-4 mr-2" />
+                  Logout
                 </Button>
               </div>
             </CardContent>

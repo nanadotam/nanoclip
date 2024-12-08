@@ -4,7 +4,8 @@ import { motion } from 'framer-motion';
 import Link from 'next/link';
 import { NavigationMenu, NavigationMenuItem, NavigationMenuLink, NavigationMenuList, NavigationMenuContent, NavigationMenuTrigger } from "@/components/ui/navigation-menu"
 import { cn } from "@/lib/utils"
-import { navigationMenuTriggerStyle } from "@/components/ui/navigation-menu"
+// import { navigationMenuTriggerStyle } from "@/components/ui/navigation-menu"
+import { navigationMenuTriggerStyle } from "../ui/navigation-menu"
 import { ThemeToggle } from "@/components/ThemeToggle"
 import MobileMenu from '../MobileMenu';
 
