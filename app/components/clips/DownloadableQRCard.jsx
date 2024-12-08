@@ -5,11 +5,7 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Download } from 'lucide-react';
 
-export function DownloadableQRCard({ clipUrl, expiryDate }) {
-  const formattedDate = expiryDate ? 
-    format(new Date(expiryDate), 'M/d/yy ∙ h:mm a') : 
-    'No expiration';
-
+export function DownloadableQRCard({ clipUrl }) {
   const downloadQRCode = () => {
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d');
@@ -31,10 +27,6 @@ export function DownloadableQRCard({ clipUrl, expiryDate }) {
     ctx.fillStyle = 'white';
     ctx.textAlign = 'center';
     ctx.fillText('NanoClip', width/2, 100);
-
-    // Draw expiry date
-    ctx.font = '36px system-ui';
-    ctx.fillText(`Expires: ${formattedDate}`, width/2, 160);
 
     // Draw sharing message
     ctx.font = '48px system-ui';
@@ -65,7 +57,6 @@ export function DownloadableQRCard({ clipUrl, expiryDate }) {
         animate={{ opacity: 1, y: 0 }}
       >
         <h1 className="text-4xl font-bold mb-2">NanoClip</h1>
-        <p className="text-sm opacity-90 mb-6">{formattedDate}</p>
         
         <div className="bg-white rounded-xl p-6 mb-6">
           <QRCodeCard clipUrl={clipUrl} />

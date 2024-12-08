@@ -6,10 +6,10 @@ import { Copy, Check, ExternalLink, Plus, Download } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { format } from 'date-fns';
 import { useRouter } from 'next/navigation';
+import QRCode from 'qrcode';
 
-export default function CreateSuccess({ clipSlug, onClose, expiryDate }) {
+export default function CreateSuccess({ clipSlug, onClose }) {
   const clipUrl = `https://nanoclip.vercel.app/clips/${clipSlug}`;
   const [copied, setCopied] = useState(false);
   const router = useRouter();
@@ -32,7 +32,24 @@ export default function CreateSuccess({ clipSlug, onClose, expiryDate }) {
     }
   };
 
-  const downloadQRCode = () => {
+  const generateQRCodeDataUrl = async (url) => {
+    try {
+      return await QRCode.toDataURL(url, {
+        width: 800,
+        height: 800,
+        margin: 2,
+        color: {
+          dark: '#000000',
+          light: '#ffffff',
+        },
+      });
+    } catch (err) {
+      console.error('QR Code generation failed:', err);
+      return null;
+    }
+  };
+
+  const downloadQRCode = async () => {
     const canvas = document.createElement('canvas');
     const ctx = canvas.getContext('2d');
     const width = 1080;
@@ -51,16 +68,14 @@ export default function CreateSuccess({ clipSlug, onClose, expiryDate }) {
     ctx.textAlign = 'center';
     ctx.fillText('NanoClip', width/2, 100);
 
-    // Draw expiry date
-    const formattedDate = expiryDate ? 
-      format(new Date(expiryDate), 'M/d/yy ∙ h:mm a') : 
-      'No expiration';
-    ctx.font = '36px system-ui';
-    ctx.fillText(`Expires: ${formattedDate}`, width/2, 160);
-
-    // Draw QR code
-    const qrImage = document.querySelector('img[alt="Clip QR Code"]');
-    if (qrImage) {
+    // Generate and draw QR code
+    const qrDataUrl = await generateQRCodeDataUrl(clipUrl);
+    if (qrDataUrl) {
+      const qrImage = new Image();
+      await new Promise((resolve) => {
+        qrImage.onload = resolve;
+        qrImage.src = qrDataUrl;
+      });
       ctx.drawImage(qrImage, (width - 800)/2, 220, 800, 800);
     }
 
@@ -90,9 +105,6 @@ export default function CreateSuccess({ clipSlug, onClose, expiryDate }) {
       <Card className="w-full max-w-sm p-4 bg-background">
         <div className="text-center space-y-2 mb-4">
           <h2 className="text-xl font-bold">Clip Created Successfully!</h2>
-          <div className="inline-flex items-center gap-2 px-3 py-1.5 bg-muted rounded-full text-sm">
-            <span>Expires: {expiryDate ? new Date(expiryDate).toLocaleDateString() : 'No expiration'}</span>
-          </div>
         </div>
 
         <div className="aspect-square bg-white rounded-lg p-4 mb-4">
@@ -103,20 +115,21 @@ export default function CreateSuccess({ clipSlug, onClose, expiryDate }) {
           />
         </div>
 
-        <code className="block w-full p-2 bg-muted rounded text-sm text-center break-all mb-4">
+        <code className="block w-full p-2 bg-muted rounded text-sm text-center break-all mb-2">
           {clipUrl}
         </code>
 
+        <Button 
+          onClick={downloadQRCode} 
+          className="w-full flex items-center justify-center gap-2 mb-4"
+          variant="outline"
+          size="sm"
+        >
+          <Download className="w-4 h-4" />
+          Download QR
+        </Button>
+
         <div className="flex gap-2 justify-center">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={downloadQRCode}
-            className="flex items-center gap-2"
-          >
-            <Download className="h-4 w-4" />
-            Download
-          </Button>
           <Button
             variant="outline"
             size="sm"
@@ -157,4 +170,4 @@ export default function CreateSuccess({ clipSlug, onClose, expiryDate }) {
       </Card>
     </motion.div>
   );
-} 
+}
