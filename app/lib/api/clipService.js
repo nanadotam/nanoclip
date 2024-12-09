@@ -16,7 +16,8 @@ import {
   ref, 
   uploadBytes,
   getDownloadURL,
-  deleteObject 
+  deleteObject,
+  uploadBytesResumable 
 } from "firebase/storage";
 import { firestore } from '../../../firestore';
 import crypto from 'crypto';
@@ -88,25 +89,38 @@ class ClipService {
   }
 
   // Create clip with files
-  async createFileClip(clipData) {
+  async createFileClip(clipData, onProgress) {
     try {
       const fileUrls = [];
       const fileMetadata = [];
+      const totalFiles = clipData.files.length;
+      const progressTracker = {};
 
-      // Upload files to Firebase Storage
       const uploadPromises = clipData.files.map(async (file) => {
         const fileName = `${Date.now()}-${file.name}`;
         const fileRef = ref(this.storage, `clips/${fileName}`);
         
-        // Upload with metadata
-        const metadata = {
-          contentType: file.type,
-          customMetadata: {
-            originalName: file.name
-          }
-        };
+        const uploadTask = uploadBytesResumable(fileRef, file);
         
-        await uploadBytes(fileRef, file, metadata);
+        // Monitor Firebase upload state
+        uploadTask.on('state_changed', 
+          (snapshot) => {
+            // Calculate individual file progress
+            const fileProgress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+            progressTracker[file.name] = fileProgress;
+            
+            // Calculate average progress across all files
+            const totalProgress = Object.values(progressTracker)
+              .reduce((acc, curr) => acc + curr, 0) / totalFiles;
+            
+            onProgress?.(file.name, totalProgress);
+          },
+          (error) => {
+            throw error;
+          }
+        );
+
+        await uploadTask;
         const downloadUrl = await getDownloadURL(fileRef);
         
         fileUrls.push(downloadUrl);
@@ -120,41 +134,18 @@ class ClipService {
       });
 
       await Promise.all(uploadPromises);
-
-      // Hash password if provided
-      const passwordHash = clipData.password ? 
-        await this.hashPassword(clipData.password) : null;
-
-      // Calculate expiration timestamp
-      const expiresAt = this.calculateExpiration(clipData.expire_option);
-
-      // Create clip document in Firestore
-      const clipRef = await addDoc(collection(firestore, 'clips'), {
-        content_type: 'file',
-        text_content: clipData.text_content || null,
-        file_urls: fileUrls,
-        file_metadata: fileMetadata,
-        password_hash: passwordHash,
-        created_at: serverTimestamp(),
-        expires_at: expiresAt ? Timestamp.fromDate(expiresAt) : null,
-        url_slug: clipData.url_slug
-      });
-
-      return {
-        id: clipRef.id,
-        url_slug: clipData.url_slug
-      };
+      return { fileUrls, fileMetadata };
     } catch (error) {
       throw new Error(`Failed to create file clip: ${error.message}`);
     }
   }
 
   // Main create clip function that routes to appropriate handler
-  async createClip(clipData) {
+  async createClip(clipData, onProgress) {
     if (!clipData.files?.length) {
       return this.createTextClip(clipData);
     }
-    return this.createFileClip(clipData);
+    return this.createFileClip(clipData, onProgress);
   }
 
   // Read operations

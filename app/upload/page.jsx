@@ -13,6 +13,7 @@ import clipService from '@/lib/api/clipService';
 import CreateSuccess from '@/components/clips/CreateSuccess';
 import { useTheme } from "next-themes";
 import { PasswordInput } from '@/components/ui/password-input';
+import { Progress } from '@/components/ui/progress';
 
 export default function UploadPage() {
   const router = useRouter();
@@ -24,6 +25,8 @@ export default function UploadPage() {
   const [error, setError] = useState('');
   const [showSuccess, setShowSuccess] = useState(false);
   const [createdClipSlug, setCreatedClipSlug] = useState('');
+  const [uploadProgress, setUploadProgress] = useState({});
+  const [totalProgress, setTotalProgress] = useState(0);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop: (acceptedFiles) => {
@@ -51,7 +54,7 @@ export default function UploadPage() {
         files: files
       };
 
-      const result = await clipService.createClip(clipData);
+      const result = await clipService.createClip(clipData, updateProgress);
       
       setCreatedClipSlug(result.url_slug);
       setShowSuccess(true);
@@ -59,7 +62,26 @@ export default function UploadPage() {
       setError(err.message);
     } finally {
       setIsLoading(false);
+      // Clear progress on completion
+      setUploadProgress({});
+      setTotalProgress(0);
     }
+  };
+
+  const updateProgress = (fileName, progress) => {
+    setUploadProgress(prev => {
+      const newProgress = {
+        ...prev,
+        [fileName]: progress
+      };
+      
+      // Calculate total progress across all files
+      const total = Object.values(newProgress).reduce((acc, curr) => acc + curr, 0);
+      const avgProgress = total / Object.keys(newProgress).length;
+      setTotalProgress(avgProgress);
+      
+      return newProgress;
+    });
   };
 
   return (
@@ -154,29 +176,44 @@ export default function UploadPage() {
                   {files.map((file, index) => (
                     <li 
                       key={index} 
-                      className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 p-2 hover:bg-muted/50 rounded-lg group"
+                      className="flex flex-col gap-2 p-2 hover:bg-muted/50 rounded-lg"
                     >
-                      <div className="flex flex-col sm:flex-row sm:items-center gap-2 flex-1 min-w-0">
-                        <span className="text-foreground font-medium truncate">
-                          {file.name}
-                        </span>
-                        <span className="text-sm text-muted-foreground">
-                          ({(file.size / 1024).toFixed(2)} KB)
-                        </span>
+                      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+                        <div className="flex flex-col sm:flex-row sm:items-center gap-2 flex-1 min-w-0">
+                          <span className="text-foreground font-medium truncate">
+                            {file.name}
+                          </span>
+                          <span className="text-sm text-muted-foreground">
+                            ({(file.size / 1024).toFixed(2)} KB)
+                          </span>
+                        </div>
+                        <Button 
+                          type="button"
+                          variant="ghost" 
+                          size="sm"
+                          className="text-destructive hover:text-destructive hover:bg-destructive/10"
+                          onClick={() => {
+                            const newFiles = [...files];
+                            newFiles.splice(index, 1);
+                            setFiles(newFiles);
+                            // Also clear progress
+                            const newProgress = { ...uploadProgress };
+                            delete newProgress[file.name];
+                            setUploadProgress(newProgress);
+                          }}
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
                       </div>
-                      <Button 
-                        type="button"
-                        variant="ghost" 
-                        size="sm"
-                        className="text-destructive hover:text-destructive hover:bg-destructive/10"
-                        onClick={() => {
-                          const newFiles = [...files];
-                          newFiles.splice(index, 1);
-                          setFiles(newFiles);
-                        }}
-                      >
-                        <X className="h-4 w-4" />
-                      </Button>
+                      
+                      {uploadProgress[file.name] !== undefined && (
+                        <div className="space-y-1">
+                          <Progress value={uploadProgress[file.name]} />
+                          <p className="text-xs text-muted-foreground text-right">
+                            {Math.round(uploadProgress[file.name])}%
+                          </p>
+                        </div>
+                      )}
                     </li>
                   ))}
                 </ul>
@@ -187,12 +224,31 @@ export default function UploadPage() {
               <div className="text-destructive text-sm">{error}</div>
             )}
 
+            {isLoading && (
+              <Card className="p-4">
+                <div className="space-y-2">
+                  <Progress value={totalProgress} className="h-2" />
+                  <div className="flex justify-between text-xs text-muted-foreground">
+                    <span>Uploading files...</span>
+                    <span>{Math.round(totalProgress)}%</span>
+                  </div>
+                </div>
+              </Card>
+            )}
+
             <Button 
               type="submit" 
               className="w-full"
               disabled={isLoading}
             >
-              {isLoading ? 'Creating Clip...' : 'Create Clip'}
+              {isLoading ? (
+                <div className="flex items-center gap-2">
+                  <span className="animate-pulse">Creating Clip...</span>
+                  {totalProgress > 0 && <span>{Math.round(totalProgress)}%</span>}
+                </div>
+              ) : (
+                'Create Clip'
+              )}
             </Button>
           </form>
         </motion.div>

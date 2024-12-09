@@ -6,19 +6,13 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import Cookies from 'js-cookie';
 
-const CURRENT_VERSION = '2.0.0';
+const CURRENT_VERSION = '2.1.0';
 const CHANGELOG = {
-  version: '2.0.0',
+  version: '2.1.0',
   features: [
     'QR Code generation for easy clip sharing',
-    '3D interactive cards with hover effects',
-    'Mobile-friendly QR code viewer',
-    'Enhanced success animations',
-  ],
-  improvements: [
-    'Better mobile responsiveness',
-    'Smoother animations',
-    'Updated UI components',
+    'Progress bar for file uploads',
+    'Downladable QR code images'
   ],
 };
 
