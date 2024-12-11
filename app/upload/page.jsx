@@ -27,6 +27,7 @@ export default function UploadPage() {
   const [createdClipSlug, setCreatedClipSlug] = useState('');
   const [uploadProgress, setUploadProgress] = useState({});
   const [totalProgress, setTotalProgress] = useState(0);
+  const [urlSlug, setUrlSlug] = useState('');
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop: (acceptedFiles) => {
@@ -42,12 +43,18 @@ export default function UploadPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    if (!urlSlug.trim()) {
+      setError('Please enter a clip name');
+      return;
+    }
+    
     setIsLoading(true);
     setError('');
 
     try {
       const clipData = {
-        url_slug: e.target.urlSlug.value,
+        url_slug: urlSlug,
         text_content: text,
         password: e.target.password.value || null,
         expire_option: e.target.expireOption.value,
@@ -62,7 +69,6 @@ export default function UploadPage() {
       setError(err.message);
     } finally {
       setIsLoading(false);
-      // Clear progress on completion
       setUploadProgress({});
       setTotalProgress(0);
     }
@@ -108,6 +114,8 @@ export default function UploadPage() {
                     <Input
                       id="urlSlug"
                       name="urlSlug"
+                      value={urlSlug}
+                      onChange={(e) => setUrlSlug(e.target.value)}
                       placeholder="my-clip-name"
                       required
                       className="flex-1"
