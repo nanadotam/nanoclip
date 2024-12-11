@@ -63,11 +63,14 @@ export default function UploadPage() {
 
       const result = await clipService.createClip(clipData, updateProgress);
       
+      if (!result?.url_slug) {
+        throw new Error('Failed to create clip: Missing URL slug');
+      }
+      
       setCreatedClipSlug(result.url_slug);
       setShowSuccess(true);
     } catch (err) {
-      setError(err.message);
-    } finally {
+      setError(err.message || 'Failed to create clip');
       setIsLoading(false);
       setUploadProgress({});
       setTotalProgress(0);

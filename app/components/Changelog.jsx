@@ -14,6 +14,11 @@ const CHANGELOG = {
     'Progress bar for file uploads',
     'Downladable QR code images'
   ],
+  improvements: [
+    'Enhanced upload reliability',
+    'Improved mobile responsiveness',
+    'Better error handling'
+  ]
 };
 
 export function Changelog() {
@@ -46,14 +51,16 @@ export function Changelog() {
               ))}
             </ul>
           </div>
-          <div>
-            <h3 className="font-semibold text-primary">🚀 Improvements</h3>
-            <ul className="list-disc pl-5 space-y-2 mt-2">
-              {CHANGELOG.improvements.map((improvement, index) => (
-                <li key={index}>{improvement}</li>
-              ))}
-            </ul>
-          </div>
+          {CHANGELOG.improvements && CHANGELOG.improvements.length > 0 && (
+            <div>
+              <h3 className="font-semibold text-primary">🚀 Improvements</h3>
+              <ul className="list-disc pl-5 space-y-2 mt-2">
+                {CHANGELOG.improvements.map((improvement, index) => (
+                  <li key={index}>{improvement}</li>
+                ))}
+              </ul>
+            </div>
+          )}
         </div>
         <Button 
           className="mt-6 w-full"

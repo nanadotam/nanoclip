@@ -102,14 +102,11 @@ class ClipService {
         
         const uploadTask = uploadBytesResumable(fileRef, file);
         
-        // Monitor Firebase upload state
         uploadTask.on('state_changed', 
           (snapshot) => {
-            // Calculate individual file progress
             const fileProgress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
             progressTracker[file.name] = fileProgress;
             
-            // Calculate average progress across all files
             const totalProgress = Object.values(progressTracker)
               .reduce((acc, curr) => acc + curr, 0) / totalFiles;
             
@@ -134,7 +131,22 @@ class ClipService {
       });
 
       await Promise.all(uploadPromises);
-      return { fileUrls, fileMetadata };
+
+      // Create the clip document in Firestore
+      const clipRef = await addDoc(collection(firestore, 'clips'), {
+        url_slug: clipData.url_slug,
+        content_type: 'file',
+        text_content: clipData.text_content,
+        file_metadata: fileMetadata,
+        password_hash: clipData.password ? await this.hashPassword(clipData.password) : null,
+        expires_at: this.calculateExpiration(clipData.expire_option),
+        created_at: serverTimestamp()
+      });
+
+      return {
+        url_slug: clipData.url_slug,
+        id: clipRef.id
+      };
     } catch (error) {
       throw new Error(`Failed to create file clip: ${error.message}`);
     }
