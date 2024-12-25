@@ -1,32 +1,13 @@
-import { WebSocketServer } from 'ws';
-import { createServer } from 'http';
+const express = require('express');
+const { WebSocketServer } = require('ws');
+const http = require('http');
+const cors = require('cors');
 
-const server = createServer();
-const wss = new WebSocketServer({ 
-  server,
-  // Add WebSocket server options
-  clientTracking: true,
-  // Handle CORS
-  verifyClient: ({ origin, req, secure }, cb) => {
-    // In development, accept all origins
-    if (process.env.NODE_ENV === 'development') {
-      cb(true);
-      return;
-    }
-    
-    // In production, verify origin
-    const allowedOrigins = [
-      'https://your-domain.com',
-      'http://localhost:3000'
-    ];
-    
-    if (allowedOrigins.includes(origin)) {
-      cb(true);
-    } else {
-      cb(false, 403, 'Origin not allowed');
-    }
-  }
-});
+const app = express();
+app.use(cors());
+
+const server = http.createServer(app);
+const wss = new WebSocketServer({ server });
 
 // Store active rooms and connections
 const rooms = new Map();
@@ -48,6 +29,7 @@ wss.on('connection', (ws) => {
           rooms.set(roomId, {
             host: ws,
             peers: new Set(),
+            type: data.roomType || 'public'
           });
           ws.send(JSON.stringify({ type: 'room-created', roomId }));
           console.log(`Room created: ${roomId}`);
@@ -59,7 +41,8 @@ wss.on('connection', (ws) => {
             room.peers.add(ws);
             room.host.send(JSON.stringify({
               type: 'peer-joined',
-              peerId: ws.id
+              peerId: ws.id,
+              deviceInfo: data.deviceInfo
             }));
             ws.send(JSON.stringify({ type: 'joined-room', roomId: data.roomId }));
             console.log(`Peer ${ws.id} joined room ${data.roomId}`);
@@ -119,10 +102,12 @@ wss.on('connection', (ws) => {
             if (data.deviceInfo) {
               // Broadcast device info to all peers in the room
               room.peers.forEach(peer => {
-                peer.send(JSON.stringify({
-                  type: 'peer-device-info',
-                  deviceInfo: data.deviceInfo
-                }));
+                if (peer !== ws) {
+                  peer.send(JSON.stringify({
+                    type: 'peer-device-info',
+                    deviceInfo: data.deviceInfo
+                  }));
+                }
               });
             }
           }

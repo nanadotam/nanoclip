@@ -1,18 +1,14 @@
 "use client";
 
-import { Progress } from '@/components/ui/progress';
-import { Card } from '@/components/ui/card';
+import { Progress } from "@/components/ui/progress";
 
 export default function TransferProgress({ progress }) {
   return (
-    <Card className="p-4">
-      <div className="space-y-2">
-        <div className="flex justify-between text-sm">
-          <span>Transferring...</span>
-          <span>{Math.round(progress)}%</span>
-        </div>
-        <Progress value={progress} />
-      </div>
-    </Card>
+    <div className="w-full space-y-2">
+      <Progress value={progress} />
+      <p className="text-sm text-muted-foreground text-center">
+        {Math.round(progress)}%
+      </p>
+    </div>
   );
 } 

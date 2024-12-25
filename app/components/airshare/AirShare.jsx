@@ -64,6 +64,12 @@ export default function AirShare() {
             setIsHost(true);
             setConnectionStatus('creating room');
 
+            // Clean up any existing connection
+            if (peerConnection.current) {
+                peerConnection.current.disconnect();
+                peerConnection.current = null;
+            }
+
             peerConnection.current = new PeerConnection({
                 deviceInfo: {
                     name: deviceName,
@@ -79,8 +85,21 @@ export default function AirShare() {
                     setTransferProgress(0);
                 },
                 onDeviceConnected: async (deviceId, deviceInfo) => {
+                    toast({
+                        title: "Device Connected",
+                        description: `${deviceInfo?.name || 'Device'} connected`
+                    });
                     setConnectionStatus('connected');
                     setSenderDevice(deviceInfo);
+                },
+                onConnectionError: (error) => {
+                    handleConnectionError(error);
+                    setConnectionStatus('error');
+                },
+                onDisconnect: () => {
+                    setConnectionStatus('disconnected');
+                    setSenderDevice(null);
+                    setShowRoomCard(false);
                 }
             });
 
@@ -91,6 +110,9 @@ export default function AirShare() {
             setConnectionStatus('waiting for connection');
         } catch (error) {
             handleConnectionError(error);
+            setIsHost(false);
+            setConnectionStatus('error');
+            peerConnection.current = null;
         }
     };
 
