@@ -1,31 +1,31 @@
 import { WebSocketServer } from 'ws';
 import { createServer } from 'http';
+import { networkInterfaces } from 'os';
 
-const server = createServer();
-const wss = new WebSocketServer({ 
-  server,
-  // Add WebSocket server options
-  clientTracking: true,
-  // Handle CORS
-  verifyClient: ({ origin, req, secure }, cb) => {
-    // In development, accept all origins
-    if (process.env.NODE_ENV === 'development') {
-      cb(true);
-      return;
-    }
-    
-    // In production, verify origin
-    const allowedOrigins = [
-      'https://your-domain.com',
-      'http://localhost:3000'
-    ];
-    
-    if (allowedOrigins.includes(origin)) {
-      cb(true);
-    } else {
-      cb(false, 403, 'Origin not allowed');
+// Get local IP address
+const getLocalIP = () => {
+  const nets = networkInterfaces();
+  for (const name of Object.keys(nets)) {
+    for (const net of nets[name]) {
+      // Skip internal and non-IPv4 addresses
+      if (net.family === 'IPv4' && !net.internal) {
+        return net.address;
+      }
     }
   }
+  return 'localhost';
+};
+
+const localIP = getLocalIP();
+const PORT = 3001;
+
+const server = createServer();
+const wss = new WebSocketServer({ server });
+
+// Log connection info
+server.listen(PORT, localIP, () => {
+  console.log(`WebSocket server running at:`);
+  console.log(`ws://${localIP}:${PORT}`);
 });
 
 // Store active rooms and connections
@@ -127,6 +127,20 @@ wss.on('connection', (ws) => {
             }
           }
           break;
+
+        case 'key-exchange':
+          if (data.target && rooms.has(data.roomId)) {
+            const targetPeer = Array.from(rooms.get(data.roomId).peers)
+              .find(peer => peer.id === data.target);
+            if (targetPeer) {
+              targetPeer.send(JSON.stringify({
+                type: 'session-key',
+                key: data.key,
+                from: ws.id
+              }));
+            }
+          }
+          break;
       }
     } catch (error) {
       console.error('Error processing message:', error);
@@ -154,9 +168,4 @@ wss.on('connection', (ws) => {
       }
     });
   });
-});
-
-const PORT = process.env.PORT || 3001;
-server.listen(PORT, () => {
-  console.log(`WebSocket server is running on port ${PORT}`);
 }); 

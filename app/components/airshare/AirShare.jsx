@@ -15,6 +15,7 @@ import ReceivingView from './ReceivingView';
 import ConnectedDevice from './ConnectedDevice';
 import HostInfo from './HostInfo';
 import FileList from './FileList';
+import { encryption } from '@/lib/utils/encryption';
 
 export default function AirShare() {
     const [isHost, setIsHost] = useState(false);
@@ -127,12 +128,47 @@ export default function AirShare() {
 
         try {
             setConnectionStatus('sending');
-            for (const file of selectedFiles) {
-                await peerConnection.current.sendFile(file);
+            
+            // Check if peer connection exists
+            if (!peerConnection.current) {
+                throw new Error('No peer connection established');
             }
+
+            // Wait for data channel to be ready
+            await new Promise((resolve, reject) => {
+                // Check current state first
+                if (peerConnection.current.dataChannel?.readyState === 'open') {
+                    resolve();
+                    return;
+                }
+
+                console.log('Waiting for data channel...');
+                
+                const timeout = setTimeout(() => {
+                    reject(new Error('Data channel connection timeout'));
+                }, 10000); // Increased timeout to 10 seconds
+
+                const checkInterval = setInterval(() => {
+                    console.log('Data channel state:', peerConnection.current.dataChannel?.readyState);
+                    if (peerConnection.current.dataChannel?.readyState === 'open') {
+                        clearInterval(checkInterval);
+                        clearTimeout(timeout);
+                        resolve();
+                    }
+                }, 100);
+            });
+
+            // Generate session key and send files
+            const sessionKey = crypto.getRandomValues(new Uint8Array(32));
+            
+            for (const file of selectedFiles) {
+                await peerConnection.current.sendFile(file, sessionKey);
+            }
+            
             setConnectionStatus('sent');
             setSelectedFiles([]);
         } catch (error) {
+            console.error('Transfer error:', error);
             toast({
                 title: "Transfer Failed",
                 description: error.message,

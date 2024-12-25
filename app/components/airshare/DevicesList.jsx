@@ -19,7 +19,7 @@ export default function DevicesList({ nearbyDevices = [], connectedDevices = [],
         <AnimatePresence mode="wait">
           {connectedDevices.length > 0 && (
             <motion.div
-              key="connected-devices"
+              key={`connected-devices-${connectedDevices.length}`}
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: 'auto' }}
               exit={{ opacity: 0, height: 0 }}
@@ -30,7 +30,7 @@ export default function DevicesList({ nearbyDevices = [], connectedDevices = [],
                 const Icon = deviceIcons[device.type] || Laptop;
                 return (
                   <motion.div
-                    key={device.id}
+                    key={`device-${device.id}`}
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
                     className="flex items-center justify-between p-3 bg-secondary/50 rounded-lg"

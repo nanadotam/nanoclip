@@ -1,5 +1,6 @@
 import { EventEmitter } from 'events';
 import { getDetailedDeviceInfo } from '../utils/deviceNames';
+import { encryption } from '../utils/encryption';
 
 export default class PeerConnection extends EventEmitter {
   constructor(options = {}) {
@@ -8,12 +9,18 @@ export default class PeerConnection extends EventEmitter {
     this.onComplete = options.onComplete || (() => {});
     this.onDeviceConnected = options.onDeviceConnected || (() => {});
     
+    // Use local IP address for testing
+    this.wsUrl = `ws://${window.location.hostname}:3001`;
     this.ws = null;
     this.dataChannel = null;
+    this.isHost = false;
     this.deviceInfo = getDetailedDeviceInfo();
 
     this.peerConnection = new RTCPeerConnection({
-      iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
+      iceServers: [
+        { urls: 'stun:stun.l.google.com:19302' },
+        { urls: 'stun:stun1.l.google.com:19302' }
+      ]
     });
     
     this.setupPeerConnection();
@@ -26,10 +33,10 @@ export default class PeerConnection extends EventEmitter {
 
     return new Promise((resolve, reject) => {
       try {
-        this.ws = new WebSocket(process.env.NEXT_PUBLIC_WS_URL);
+        this.ws = new WebSocket(this.wsUrl);
         
         this.ws.onopen = () => {
-          console.log('WebSocket connected');
+          console.log('WebSocket connected to:', this.wsUrl);
           this.setupWebSocket();
           resolve();
         };
@@ -77,6 +84,14 @@ export default class PeerConnection extends EventEmitter {
         case 'ice-candidate':
           await this.handleIceCandidate(data.candidate);
           break;
+          
+        case 'session-key':
+          // Handle received session key
+          if (data.key) {
+            this.sessionKey = data.key;
+            this.emit('session-key', data.key);
+          }
+          break;
       }
     };
   }
@@ -100,58 +115,62 @@ export default class PeerConnection extends EventEmitter {
   }
 
   setupDataChannel() {
-    if (this.isHost && !this.dataChannel) {
-      this.dataChannel = this.peerConnection.createDataChannel('fileTransfer', {
-        ordered: true
-      });
-    }
-
-    const handleDataChannel = (channel) => {
+    const initDataChannel = (channel) => {
       channel.onopen = () => {
-        console.log('Data channel is open');
+        console.log('Data channel opened:', channel.label);
         this.dataChannel = channel;
+        this.emit('datachannel-open');
       };
 
       channel.onclose = () => {
-        console.log('Data channel closed');
+        console.log('Data channel closed:', channel.label);
         this.dataChannel = null;
       };
 
       channel.onerror = (error) => {
-        console.error('Data channel error:', error);
+        console.error('Data channel error:', channel.label, error);
       };
 
       channel.onmessage = (event) => {
-        // Handle incoming data
-        console.log('Received data:', event.data);
+        console.log('Received message on channel:', channel.label);
       };
     };
 
-    if (this.dataChannel) {
-      handleDataChannel(this.dataChannel);
+    if (this.isHost) {
+      console.log('Creating data channel as host');
+      this.dataChannel = this.peerConnection.createDataChannel('fileTransfer', {
+        ordered: true,
+        maxRetransmits: 30
+      });
+      initDataChannel(this.dataChannel);
     }
 
     this.peerConnection.ondatachannel = (event) => {
-      handleDataChannel(event.channel);
+      console.log('Received data channel:', event.channel.label);
+      initDataChannel(event.channel);
     };
   }
 
   async createRoom() {
-    try {
-      await this.connect();
+    this.isHost = true;
+    await this.connect();
+    this.setupDataChannel();
+    
+    return new Promise((resolve, reject) => {
       this.ws.send(JSON.stringify({ type: 'create-room' }));
       
-      return new Promise((resolve) => {
-        const checkRoom = setInterval(() => {
-          if (this.roomId) {
-            clearInterval(checkRoom);
-            resolve(this.roomId);
-          }
-        }, 100);
-      });
-    } catch (error) {
-      throw new Error(`Failed to create room: ${error.message}`);
-    }
+      const timeout = setTimeout(() => {
+        reject(new Error('Room creation timeout'));
+      }, 5000);
+
+      const checkRoom = setInterval(() => {
+        if (this.roomId) {
+          clearInterval(checkRoom);
+          clearTimeout(timeout);
+          resolve(this.roomId);
+        }
+      }, 100);
+    });
   }
 
   async joinRoom(roomId) {
@@ -198,28 +217,20 @@ export default class PeerConnection extends EventEmitter {
     await this.peerConnection.addIceCandidate(new RTCIceCandidate(candidate));
   }
 
-  async sendFile(file) {
+  async sendFile(file, sessionKey) {
     return new Promise((resolve, reject) => {
       if (!this.dataChannel || this.dataChannel.readyState !== 'open') {
-        const checkInterval = setInterval(() => {
-          if (this.dataChannel?.readyState === 'open') {
-            clearInterval(checkInterval);
-            this.sendFileData(file).then(resolve).catch(reject);
-          }
-        }, 100);
-
-        // Timeout after 5 seconds
-        setTimeout(() => {
-          clearInterval(checkInterval);
-          reject(new Error('Data channel connection timeout'));
-        }, 5000);
-      } else {
-        this.sendFileData(file).then(resolve).catch(reject);
+        reject(new Error('Data channel not ready'));
+        return;
       }
+
+      this.sendFileData(file, sessionKey)
+        .then(resolve)
+        .catch(reject);
     });
   }
 
-  async sendFileData(file) {
+  async sendFileData(file, sessionKey) {
     const chunkSize = 16384;
     const fileReader = new FileReader();
     let offset = 0;
@@ -230,9 +241,20 @@ export default class PeerConnection extends EventEmitter {
 
     fileReader.onload = (e) => {
       if (this.dataChannel.readyState === 'open') {
-        this.dataChannel.send(e.target.result);
-        offset += e.target.result.byteLength;
+        // Encrypt chunk before sending
+        const chunk = e.target.result;
+        const { iv, encrypted } = encryption.encryptChunk(chunk, sessionKey);
         
+        // Send IV first, then encrypted data
+        this.dataChannel.send(JSON.stringify({
+          type: 'file-chunk',
+          iv: iv.toString('base64'),
+          data: encrypted.toString('base64'),
+          offset,
+          fileSize: file.size
+        }));
+
+        offset += e.target.result.byteLength;
         const progress = Math.min(100, (offset / file.size) * 100);
         this.onProgress(progress);
         
@@ -288,5 +310,42 @@ export default class PeerConnection extends EventEmitter {
       target: fromPeerId,
       roomId: this.roomId
     }));
+  }
+
+  async exchangeKey(sessionKey) {
+    if (!this.ws?.readyState === WebSocket.OPEN) {
+      throw new Error('WebSocket connection not open');
+    }
+
+    return new Promise((resolve, reject) => {
+      try {
+        // Send the session key to peer
+        this.ws.send(JSON.stringify({
+          type: 'key-exchange',
+          key: sessionKey,
+          target: this.peerId,
+          roomId: this.roomId
+        }));
+
+        // Set up one-time handler for key response
+        const keyHandler = (event) => {
+          const data = JSON.parse(event.data);
+          if (data.type === 'session-key') {
+            this.ws.removeEventListener('message', keyHandler);
+            resolve(data.key);
+          }
+        };
+
+        this.ws.addEventListener('message', keyHandler);
+
+        // Timeout after 5 seconds
+        setTimeout(() => {
+          this.ws.removeEventListener('message', keyHandler);
+          reject(new Error('Key exchange timeout'));
+        }, 5000);
+      } catch (error) {
+        reject(new Error(`Key exchange failed: ${error.message}`));
+      }
+    });
   }
 } 
