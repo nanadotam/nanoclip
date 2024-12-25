@@ -3,7 +3,7 @@
 import { motion } from 'framer-motion';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Download, Laptop, Smartphone, Tablet, ArrowRight } from 'lucide-react';
+import { Download, Laptop, Smartphone, Tablet, ArrowRight, Pencil } from 'lucide-react';
 import TransferProgress from './TransferProgress';
 
 const deviceIcons = {
@@ -57,10 +57,10 @@ export default function ReceivingView({
                   <span className="font-medium">{receiverDevice?.name}</span>
                   <Button 
                     variant="ghost" 
-                    size="sm"
+                    size="icon"
                     onClick={() => onNameChange(receiverDevice?.id)}
                   >
-                    Edit
+                    <Pencil className="w-4 h-4" />
                   </Button>
                 </div>
               </motion.div>

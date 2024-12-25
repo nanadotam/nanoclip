@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Laptop, Smartphone, Tablet, Edit2, Check } from 'lucide-react';
+import { Laptop, Smartphone, Tablet, Pencil, Check } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -49,10 +49,10 @@ export default function ConnectedDevice({ device, isReceiving, onNameChange }) {
               <span className="font-medium">{device.name}</span>
               <Button 
                 variant="ghost" 
-                size="sm" 
+                size="icon"
                 onClick={() => setIsEditing(true)}
               >
-                <Edit2 className="w-3 h-3" />
+                <Pencil className="w-4 h-4" />
               </Button>
             </div>
           )}

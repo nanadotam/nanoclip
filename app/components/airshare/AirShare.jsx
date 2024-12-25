@@ -147,24 +147,34 @@ export default function AirShare() {
   const handleJoinRoom = async (roomId) => {
     try {
       setConnectionStatus('joining');
+      setIsHost(false);
       
       if (!peerConnection.current) {
         peerConnection.current = new PeerConnection({
           deviceName,
           deviceType,
-          onProgress: (progress) => setTransferProgress(progress),
+          onProgress: (progress) => {
+            setTransferProgress(progress);
+            setConnectionStatus('receiving');
+          },
           onComplete: () => {
             toast({
               title: "Transfer Complete",
-              description: "Files have been successfully shared!"
+              description: "Files have been successfully received!"
             });
             setTransferProgress(0);
+            setConnectionStatus('connected');
           },
           onDeviceConnected: (deviceId, deviceInfo) => {
             setSenderDevice(deviceInfo);
             setConnectionStatus('connected');
+            toast({
+              title: "Connected",
+              description: `Connected to ${deviceInfo?.name || 'device'}`
+            });
           },
           onDeviceInfoUpdate: (deviceInfo) => {
+            if (!deviceInfo) return;
             setSenderDevice(deviceInfo);
           }
         });
@@ -172,6 +182,7 @@ export default function AirShare() {
 
       await peerConnection.current.joinRoom(roomId);
       setShowRoomCard(false);
+      setCurrentRoomId(roomId);
       setConnectionStatus('connected');
     } catch (error) {
       console.error('Join room error:', error);
@@ -181,13 +192,13 @@ export default function AirShare() {
         variant: "destructive"
       });
       setConnectionStatus('error');
+      setIsHost(false);
     }
   };
 
   return (
     <div className="container max-w-2xl mx-auto px-4 py-8">
-      {!isHost && senderDevice ? (
-        // Receiving View
+      {(!isHost && (connectionStatus === 'connected' || connectionStatus === 'receiving')) ? (
         <ReceivingView
           senderDevice={senderDevice}
           receiverDevice={receiverDevice}
