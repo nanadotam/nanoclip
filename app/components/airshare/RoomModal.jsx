@@ -31,6 +31,20 @@ export default function RoomModal({ roomId, isVisible, onClose, onJoinRoom }) {
     }
   };
 
+  const handleJoinSubmit = (e) => {
+    e.preventDefault();
+    if (!joinRoomId.trim()) {
+      toast({
+        title: "Error",
+        description: "Please enter a room ID",
+        variant: "destructive",
+      });
+      return;
+    }
+    onJoinRoom(joinRoomId.trim());
+    setJoinRoomId(''); // Reset input after submission
+  };
+
   return (
     <AnimatePresence>
       {isVisible && (
@@ -87,7 +101,7 @@ export default function RoomModal({ roomId, isVisible, onClose, onJoinRoom }) {
                     />
                     <Button
                       className="w-full"
-                      onClick={() => onJoinRoom(joinRoomId)}
+                      onClick={handleJoinSubmit}
                     >
                       Join Room
                     </Button>

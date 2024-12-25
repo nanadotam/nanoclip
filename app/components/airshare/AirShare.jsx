@@ -10,6 +10,9 @@ import PeerConnection from '@/lib/webrtc/PeerConnection';
 import DeviceList from './DeviceList';
 import TransferProgress from './TransferProgress';
 import RoomModal from './RoomModal';
+import { generateDeviceName, detectDeviceType } from '@/lib/utils/deviceNames';
+import ReceivingView from './ReceivingView';
+import ConnectedDevice from './ConnectedDevice';
 
 export default function AirShare() {
   const [isHost, setIsHost] = useState(false);
@@ -22,6 +25,37 @@ export default function AirShare() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [currentRoomId, setCurrentRoomId] = useState(null);
   const [showRoomCard, setShowRoomCard] = useState(false);
+  const [deviceName, setDeviceName] = useState(generateDeviceName());
+  const [deviceType, setDeviceType] = useState(detectDeviceType());
+  const [connectedDevices, setConnectedDevices] = useState([]);
+  const [senderDevice, setSenderDevice] = useState(null);
+  const [receiverDevice, setReceiverDevice] = useState({
+    name: deviceName,
+    type: deviceType,
+    id: Math.random().toString(36).substr(2, 9)
+  });
+
+  useEffect(() => {
+    // Initialize PeerConnection with device info
+    if (peerConnection.current) {
+      peerConnection.current.updateDeviceInfo({
+        name: deviceName,
+        type: deviceType,
+        id: receiverDevice.id
+      });
+    }
+  }, [deviceName, deviceType]);
+
+  const handleDeviceNameChange = (newName) => {
+    setDeviceName(newName);
+    if (peerConnection.current) {
+      peerConnection.current.updateDeviceInfo({
+        name: newName,
+        type: deviceType,
+        id: receiverDevice.id
+      });
+    }
+  };
 
   const startHosting = async () => {
     try {
@@ -29,6 +63,8 @@ export default function AirShare() {
       setConnectionStatus('creating room');
       
       peerConnection.current = new PeerConnection({
+        deviceName,
+        deviceType,
         onProgress: (progress) => setTransferProgress(progress),
         onComplete: () => {
           toast({
@@ -37,18 +73,33 @@ export default function AirShare() {
           });
           setTransferProgress(0);
         },
-        onDeviceConnected: (deviceId) => {
+        onDeviceConnected: (deviceId, deviceInfo) => {
+          const connectedDevice = deviceInfo || {
+            id: deviceId,
+            name: 'Unknown Device',
+            type: 'laptop'
+          };
+          
           toast({
             title: "Device Connected",
-            description: `Device ${deviceId} joined the room`
+            description: `${connectedDevice.name} joined the room`
           });
           setConnectionStatus('connected');
+          setConnectedDevices(prev => [...prev, connectedDevice]);
+        },
+        onDeviceInfoUpdate: (deviceInfo) => {
+          if (!deviceInfo) return;
+          
+          setSenderDevice(deviceInfo);
+          setConnectedDevices(prev => 
+            prev.map(d => d.id === deviceInfo.id ? deviceInfo : d)
+          );
         }
       });
 
       const roomId = await peerConnection.current.createRoom();
       setCurrentRoomId(roomId);
-      setIsModalOpen(true);
+      setShowRoomCard(true);
       setConnectionStatus('waiting for connection');
     } catch (error) {
       toast({
@@ -96,10 +147,34 @@ export default function AirShare() {
   const handleJoinRoom = async (roomId) => {
     try {
       setConnectionStatus('joining');
+      
+      if (!peerConnection.current) {
+        peerConnection.current = new PeerConnection({
+          deviceName,
+          deviceType,
+          onProgress: (progress) => setTransferProgress(progress),
+          onComplete: () => {
+            toast({
+              title: "Transfer Complete",
+              description: "Files have been successfully shared!"
+            });
+            setTransferProgress(0);
+          },
+          onDeviceConnected: (deviceId, deviceInfo) => {
+            setSenderDevice(deviceInfo);
+            setConnectionStatus('connected');
+          },
+          onDeviceInfoUpdate: (deviceInfo) => {
+            setSenderDevice(deviceInfo);
+          }
+        });
+      }
+
       await peerConnection.current.joinRoom(roomId);
-      setIsModalOpen(false);
+      setShowRoomCard(false);
       setConnectionStatus('connected');
     } catch (error) {
+      console.error('Join room error:', error);
       toast({
         title: "Join Error",
         description: error.message,
@@ -111,89 +186,126 @@ export default function AirShare() {
 
   return (
     <div className="container max-w-2xl mx-auto px-4 py-8">
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="space-y-6"
-      >
-        <Card className="p-6">
-          <div className="flex flex-col items-center gap-6">
-            <h2 className="text-2xl font-bold">AirShare</h2>
-            <p className="text-muted-foreground text-center">
-              Share files instantly with nearby devices
-            </p>
-            
-            <div className="flex flex-col items-center gap-4 w-full">
-              {!isHost ? (
-                <div className="w-full space-y-4">
-                  <Button onClick={startHosting} className="w-full">
-                    <Wifi className="mr-2 h-4 w-4" />
-                    Create Room
-                  </Button>
-                  <Button 
-                    onClick={() => setShowRoomCard(true)} 
-                    variant="outline" 
-                    className="w-full"
-                  >
-                    <Users className="mr-2 h-4 w-4" />
-                    Join Existing Room
-                  </Button>
-                </div>
-              ) : (
-                <>
-                  <div className="w-full">
-                    <input
-                      type="file"
-                      multiple
-                      onChange={handleFileSelect}
-                      className="w-full p-2 border rounded"
-                    />
+      {!isHost && senderDevice ? (
+        // Receiving View
+        <ReceivingView
+          senderDevice={senderDevice}
+          receiverDevice={receiverDevice}
+          transferProgress={transferProgress}
+          onNameChange={handleDeviceNameChange}
+          connectionStatus={connectionStatus}
+          selectedFiles={selectedFiles}
+        />
+      ) : (
+        // Hosting View
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="space-y-6"
+        >
+          <Card className="p-6">
+            <div className="flex flex-col items-center gap-6">
+              <h2 className="text-2xl font-bold">AirShare</h2>
+              <p className="text-muted-foreground text-center">
+                Share files instantly with nearby devices
+              </p>
+              
+              <div className="flex flex-col items-center gap-4 w-full">
+                {!isHost ? (
+                  <div className="w-full space-y-4">
+                    <Button onClick={startHosting} className="w-full">
+                      <Wifi className="mr-2 h-4 w-4" />
+                      Create Room
+                    </Button>
+                    <Button 
+                      onClick={() => setShowRoomCard(true)} 
+                      variant="outline" 
+                      className="w-full"
+                    >
+                      <Users className="mr-2 h-4 w-4" />
+                      Join Existing Room
+                    </Button>
                   </div>
-                  
-                  {selectedFiles.length > 0 && (
+                ) : (
+                  <>
                     <div className="w-full">
-                      <h3 className="font-medium mb-2">Selected Files:</h3>
-                      <ul className="space-y-2">
-                        {selectedFiles.map((file, index) => (
-                          <li key={index} className="text-sm">
-                            {file.name} ({(file.size / 1024).toFixed(2)} KB)
-                          </li>
-                        ))}
-                      </ul>
+                      <input
+                        type="file"
+                        multiple
+                        onChange={handleFileSelect}
+                        className="w-full p-2 border rounded"
+                      />
                     </div>
-                  )}
+                    
+                    {selectedFiles.length > 0 && (
+                      <div className="w-full">
+                        <h3 className="font-medium mb-2">Selected Files:</h3>
+                        <ul className="space-y-2">
+                          {selectedFiles.map((file, index) => (
+                            <li key={index} className="text-sm">
+                              {file.name} ({(file.size / 1024).toFixed(2)} KB)
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
 
-                  <Button 
-                    onClick={sendFiles}
-                    disabled={!selectedFiles.length || connectionStatus !== 'connected'}
-                    className="w-full"
-                  >
-                    <Upload className="mr-2 h-4 w-4" />
-                    Send Files
-                  </Button>
-                </>
-              )}
+                    <Button 
+                      onClick={sendFiles}
+                      disabled={!selectedFiles.length || connectionStatus !== 'connected'}
+                      className="w-full"
+                    >
+                      <Upload className="mr-2 h-4 w-4" />
+                      Send Files
+                    </Button>
+                  </>
+                )}
 
-              <div className="text-sm text-muted-foreground">
-                Status: {connectionStatus}
+                <div className="text-sm text-muted-foreground">
+                  Status: {connectionStatus}
+                </div>
               </div>
             </div>
-          </div>
-        </Card>
+          </Card>
 
-        <RoomModal
-          roomId={currentRoomId}
-          isVisible={showRoomCard || currentRoomId}
-          onClose={() => setShowRoomCard(false)}
-          onJoinRoom={handleJoinRoom}
-        />
+          <RoomModal
+            roomId={currentRoomId}
+            isVisible={showRoomCard || currentRoomId}
+            onClose={() => setShowRoomCard(false)}
+            onJoinRoom={handleJoinRoom}
+          />
 
-        {isHost && <DeviceList devices={devices} />}
+          {isHost && <DeviceList devices={devices} />}
 
-        {transferProgress > 0 && (
-          <TransferProgress progress={transferProgress} />
-        )}
-      </motion.div>
+          {transferProgress > 0 && (
+            <TransferProgress progress={transferProgress} />
+          )}
+
+          {/* Connected Devices Card */}
+          {connectedDevices.length > 0 && (
+            <Card className="p-4">
+              <h3 className="text-lg font-semibold mb-4">Connected Devices</h3>
+              <div className="space-y-2">
+                {connectedDevices.map(device => (
+                  <ConnectedDevice
+                    key={device.id}
+                    device={device}
+                    isReceiving={transferProgress > 0}
+                    onNameChange={(newName) => {
+                      setConnectedDevices(prev =>
+                        prev.map(d => d.id === device.id 
+                          ? { ...d, name: newName }
+                          : d
+                        )
+                      );
+                    }}
+                  />
+                ))}
+              </div>
+            </Card>
+          )}
+        </motion.div>
+      )}
     </div>
   );
 } 

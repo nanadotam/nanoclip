@@ -112,6 +112,21 @@ wss.on('connection', (ws) => {
             }
           }
           break;
+
+        case 'device-info-update':
+          if (rooms.has(data.roomId)) {
+            const room = rooms.get(data.roomId);
+            if (data.deviceInfo) {
+              // Broadcast device info to all peers in the room
+              room.peers.forEach(peer => {
+                peer.send(JSON.stringify({
+                  type: 'peer-device-info',
+                  deviceInfo: data.deviceInfo
+                }));
+              });
+            }
+          }
+          break;
       }
     } catch (error) {
       console.error('Error processing message:', error);

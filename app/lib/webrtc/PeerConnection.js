@@ -1,4 +1,5 @@
 import { EventEmitter } from 'events';
+import { getDetailedDeviceInfo } from '../utils/deviceNames';
 
 export default class PeerConnection extends EventEmitter {
   constructor(options = {}) {
@@ -8,6 +9,9 @@ export default class PeerConnection extends EventEmitter {
     this.onDeviceConnected = options.onDeviceConnected || (() => {});
     
     this.ws = null;
+    this.dataChannel = null;
+    this.deviceInfo = getDetailedDeviceInfo();
+
     this.peerConnection = new RTCPeerConnection({
       iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
     });
@@ -16,26 +20,34 @@ export default class PeerConnection extends EventEmitter {
   }
 
   async connect() {
+    if (this.ws?.readyState === WebSocket.OPEN) {
+      return; // Already connected
+    }
+
     return new Promise((resolve, reject) => {
-      this.ws = new WebSocket(process.env.NEXT_PUBLIC_WS_URL);
-      
-      this.ws.onopen = () => {
-        console.log('WebSocket connected');
-        this.setupWebSocket();
-        resolve();
-      };
+      try {
+        this.ws = new WebSocket(process.env.NEXT_PUBLIC_WS_URL);
+        
+        this.ws.onopen = () => {
+          console.log('WebSocket connected');
+          this.setupWebSocket();
+          resolve();
+        };
 
-      this.ws.onerror = (error) => {
-        console.error('WebSocket error:', error);
-        reject(error);
-      };
+        this.ws.onerror = (error) => {
+          console.error('WebSocket error:', error);
+          reject(new Error('Failed to connect to WebSocket server'));
+        };
 
-      // Add connection timeout
-      setTimeout(() => {
-        if (this.ws.readyState !== WebSocket.OPEN) {
-          reject(new Error('WebSocket connection timeout'));
-        }
-      }, 5000);
+        // Add connection timeout
+        setTimeout(() => {
+          if (this.ws.readyState !== WebSocket.OPEN) {
+            reject(new Error('WebSocket connection timeout'));
+          }
+        }, 5000);
+      } catch (error) {
+        reject(new Error(`WebSocket initialization failed: ${error.message}`));
+      }
     });
   }
 
@@ -88,17 +100,39 @@ export default class PeerConnection extends EventEmitter {
   }
 
   setupDataChannel() {
-    if (!this.dataChannel) {
-      this.dataChannel = this.peerConnection.createDataChannel('fileTransfer');
+    if (this.isHost && !this.dataChannel) {
+      this.dataChannel = this.peerConnection.createDataChannel('fileTransfer', {
+        ordered: true
+      });
     }
 
-    this.dataChannel.onopen = () => {
-      console.log('Data channel is open');
+    const handleDataChannel = (channel) => {
+      channel.onopen = () => {
+        console.log('Data channel is open');
+        this.dataChannel = channel;
+      };
+
+      channel.onclose = () => {
+        console.log('Data channel closed');
+        this.dataChannel = null;
+      };
+
+      channel.onerror = (error) => {
+        console.error('Data channel error:', error);
+      };
+
+      channel.onmessage = (event) => {
+        // Handle incoming data
+        console.log('Received data:', event.data);
+      };
     };
 
-    this.dataChannel.onmessage = (event) => {
-      // Handle incoming file chunks
-      // Implementation depends on how you want to handle file reception
+    if (this.dataChannel) {
+      handleDataChannel(this.dataChannel);
+    }
+
+    this.peerConnection.ondatachannel = (event) => {
+      handleDataChannel(event.channel);
     };
   }
 
@@ -106,6 +140,7 @@ export default class PeerConnection extends EventEmitter {
     try {
       await this.connect();
       this.ws.send(JSON.stringify({ type: 'create-room' }));
+      
       return new Promise((resolve) => {
         const checkRoom = setInterval(() => {
           if (this.roomId) {
@@ -120,7 +155,12 @@ export default class PeerConnection extends EventEmitter {
   }
 
   async joinRoom(roomId) {
-    this.ws.send(JSON.stringify({ type: 'join-room', roomId }));
+    try {
+      await this.connect();
+      this.ws.send(JSON.stringify({ type: 'join-room', roomId }));
+    } catch (error) {
+      throw new Error(`Failed to join room: ${error.message}`);
+    }
   }
 
   async createOffer() {
@@ -159,21 +199,48 @@ export default class PeerConnection extends EventEmitter {
   }
 
   async sendFile(file) {
-    const chunkSize = 16384; // 16KB chunks
+    return new Promise((resolve, reject) => {
+      if (!this.dataChannel || this.dataChannel.readyState !== 'open') {
+        const checkInterval = setInterval(() => {
+          if (this.dataChannel?.readyState === 'open') {
+            clearInterval(checkInterval);
+            this.sendFileData(file).then(resolve).catch(reject);
+          }
+        }, 100);
+
+        // Timeout after 5 seconds
+        setTimeout(() => {
+          clearInterval(checkInterval);
+          reject(new Error('Data channel connection timeout'));
+        }, 5000);
+      } else {
+        this.sendFileData(file).then(resolve).catch(reject);
+      }
+    });
+  }
+
+  async sendFileData(file) {
+    const chunkSize = 16384;
     const fileReader = new FileReader();
     let offset = 0;
 
+    fileReader.onerror = (error) => {
+      throw new Error(`Error reading file: ${error}`);
+    };
+
     fileReader.onload = (e) => {
-      this.dataChannel.send(e.target.result);
-      offset += e.target.result.byteLength;
-      
-      const progress = Math.min(100, (offset / file.size) * 100);
-      this.onProgress(progress);
-      
-      if (offset < file.size) {
-        readSlice(offset);
-      } else {
-        this.onComplete();
+      if (this.dataChannel.readyState === 'open') {
+        this.dataChannel.send(e.target.result);
+        offset += e.target.result.byteLength;
+        
+        const progress = Math.min(100, (offset / file.size) * 100);
+        this.onProgress(progress);
+        
+        if (offset < file.size) {
+          readSlice(offset);
+        } else {
+          this.onComplete();
+        }
       }
     };
 
@@ -183,5 +250,40 @@ export default class PeerConnection extends EventEmitter {
     };
 
     readSlice(0);
+  }
+
+  updateDeviceInfo(info) {
+    this.deviceInfo = { ...this.deviceInfo, ...info };
+    // Broadcast device info update to peers
+    if (this.ws?.readyState === WebSocket.OPEN) {
+      this.ws.send(JSON.stringify({
+        type: 'device-info-update',
+        deviceInfo: this.deviceInfo,
+        roomId: this.roomId
+      }));
+    }
+  }
+
+  async requestDeviceInfo() {
+    if (this.ws?.readyState === WebSocket.OPEN) {
+      this.ws.send(JSON.stringify({
+        type: 'device-info-request',
+        deviceInfo: this.deviceInfo, // Send our info while requesting
+        roomId: this.roomId
+      }));
+    }
+  }
+
+  handleDeviceInfoRequest(fromPeerId, theirDeviceInfo) {
+    // Store their device info
+    this.peerDeviceInfo = theirDeviceInfo;
+    
+    // Send our device info back
+    this.ws.send(JSON.stringify({
+      type: 'device-info-response',
+      deviceInfo: this.deviceInfo,
+      target: fromPeerId,
+      roomId: this.roomId
+    }));
   }
 } 
