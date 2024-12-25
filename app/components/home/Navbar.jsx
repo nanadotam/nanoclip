@@ -1,21 +1,13 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { ThemeToggle } from "@/components/ThemeToggle";
-import {
-  NavigationMenu,
-  NavigationMenuContent,
-  NavigationMenuItem,
-  NavigationMenuLink,
-  NavigationMenuList,
-  NavigationMenuTrigger,
-  navigationMenuTriggerStyle,
-} from "@/components/ui/navigation-menu";
-import { Wifi, Upload, Download, Info, Phone, HelpCircle } from "lucide-react";
+import { Wifi, Upload, Download, Info, Phone, HelpCircle, X } from "lucide-react";
 
 const routes = [
   {
@@ -58,92 +50,129 @@ const moreLinks = [
 
 export default function Navbar() {
   const pathname = usePathname();
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+
+  const toggleMenu = () => setIsMenuOpen(!isMenuOpen);
 
   return (
-    <nav className="fixed top-0 w-full z-50 bg-background/80 backdrop-blur-md border-b">
-      <div className="container mx-auto px-4 h-16 flex items-center justify-between">
-        <Link href="/" className="font-semibold text-lg">
-          NanoClip
-        </Link>
+    <>
+      <nav className="fixed top-0 w-full z-50 bg-background/80 backdrop-blur-md border-b">
+        <div className="container mx-auto px-4 h-16 flex items-center justify-between">
+          <Link href="/" className="font-semibold text-lg">
+            NanoClip
+          </Link>
 
-        <div className="hidden md:flex items-center gap-6">
-          <NavigationMenu>
-            <NavigationMenuList>
+          {/* Desktop Navigation */}
+          <div className="hidden md:flex items-center gap-6">
+            <div className="flex items-center gap-1">
               {routes.map((route) => (
-                <NavigationMenuItem key={route.path}>
-                  <Link href={route.path} legacyBehavior passHref>
-                    <NavigationMenuLink
-                      className={cn(
-                        navigationMenuTriggerStyle(),
-                        "h-9 px-4 flex items-center gap-2",
-                        pathname === route.path &&
-                          "bg-accent text-accent-foreground"
-                      )}
-                    >
-                      <route.icon className="w-4 h-4" />
-                      {route.name}
-                    </NavigationMenuLink>
-                  </Link>
-                </NavigationMenuItem>
+                <Link 
+                  key={route.path} 
+                  href={route.path}
+                  className={cn(
+                    "px-4 py-2 rounded-md flex items-center gap-2 hover:bg-accent transition-colors",
+                    pathname === route.path && "bg-accent text-accent-foreground"
+                  )}
+                >
+                  <route.icon className="w-4 h-4" />
+                  {route.name}
+                </Link>
               ))}
+            </div>
+            <ThemeToggle />
+          </div>
 
-              <NavigationMenuItem>
-                <NavigationMenuTrigger className="h-9">
-                  More
-                </NavigationMenuTrigger>
-                <NavigationMenuContent>
-                  <ul className="grid w-[400px] gap-3 p-4 md:w-[500px] md:grid-cols-2 lg:w-[600px]">
-                    {moreLinks.map((item) => (
-                      <Link key={item.path} href={item.path} legacyBehavior passHref>
-                        <NavigationMenuLink
-                          className={cn(
-                            "block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground",
-                            pathname === item.path &&
-                              "bg-accent text-accent-foreground"
-                          )}
-                        >
-                          <div className="flex items-center gap-2">
-                            <item.icon className="w-4 h-4" />
-                            <span className="text-sm font-medium leading-none">
-                              {item.name}
-                            </span>
-                          </div>
-                          <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
-                            {item.description}
-                          </p>
-                        </NavigationMenuLink>
-                      </Link>
-                    ))}
-                  </ul>
-                </NavigationMenuContent>
-              </NavigationMenuItem>
-            </NavigationMenuList>
-          </NavigationMenu>
-
-          <ThemeToggle />
-        </div>
-
-        <div className="md:hidden flex items-center gap-4">
-          <ThemeToggle />
-          <Button
-            variant="ghost"
-            size="icon"
-            className="md:hidden"
-            asChild
-          >
-            <Link href="/menu">
+          {/* Mobile Navigation Button */}
+          <div className="md:hidden flex items-center gap-4">
+            <ThemeToggle />
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={toggleMenu}
+              className="relative z-50"
+            >
               <motion.div
                 className="w-6 h-5 flex flex-col justify-between"
                 initial={false}
               >
-                <motion.span className="w-full h-[2px] bg-foreground" />
-                <motion.span className="w-full h-[2px] bg-foreground" />
-                <motion.span className="w-full h-[2px] bg-foreground" />
+                <motion.span
+                  className="w-full h-[2px] bg-foreground"
+                  animate={{ 
+                    rotate: isMenuOpen ? 45 : 0,
+                    y: isMenuOpen ? 9 : 0
+                  }}
+                />
+                <motion.span
+                  className="w-full h-[2px] bg-foreground"
+                  animate={{ 
+                    opacity: isMenuOpen ? 0 : 1
+                  }}
+                />
+                <motion.span
+                  className="w-full h-[2px] bg-foreground"
+                  animate={{ 
+                    rotate: isMenuOpen ? -45 : 0,
+                    y: isMenuOpen ? -9 : 0
+                  }}
+                />
               </motion.div>
-            </Link>
-          </Button>
+            </Button>
+          </div>
         </div>
-      </div>
-    </nav>
+      </nav>
+
+      {/* Mobile Menu Overlay */}
+      <AnimatePresence>
+        {isMenuOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-40 bg-background md:hidden"
+          >
+            <div className="pt-24 px-4 pb-8">
+              <div className="space-y-4">
+                {routes.map((route) => (
+                  <Link
+                    key={route.path}
+                    href={route.path}
+                    onClick={() => setIsMenuOpen(false)}
+                    className={cn(
+                      "flex items-center gap-2 p-4 rounded-lg hover:bg-accent transition-colors",
+                      pathname === route.path && "bg-accent text-accent-foreground"
+                    )}
+                  >
+                    <route.icon className="w-5 h-5" />
+                    <span>{route.name}</span>
+                  </Link>
+                ))}
+                
+                <div className="h-px bg-border my-4" />
+                
+                {moreLinks.map((item) => (
+                  <Link
+                    key={item.path}
+                    href={item.path}
+                    onClick={() => setIsMenuOpen(false)}
+                    className={cn(
+                      "flex flex-col gap-1 p-4 rounded-lg hover:bg-accent transition-colors",
+                      pathname === item.path && "bg-accent text-accent-foreground"
+                    )}
+                  >
+                    <div className="flex items-center gap-2">
+                      <item.icon className="w-5 h-5" />
+                      <span>{item.name}</span>
+                    </div>
+                    <p className="text-sm text-muted-foreground pl-7">
+                      {item.description}
+                    </p>
+                  </Link>
+                ))}
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </>
   );
 }
