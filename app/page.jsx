@@ -5,6 +5,7 @@
 import { motion } from 'framer-motion';
 import Download from "./components/home/Download";
 import Upload from "./components/home/Upload";
+import AirShare from "./components/home/AirShare";
 // import TestConnection from '@/components/TestConnection';
 import { FlipWords } from "@/components/ui/flip-words";
 import Onboarding from "./components/home/Onboarding";
@@ -76,37 +77,42 @@ export default function Home() {
           variants={itemVariants}
         >
           <FlipWords
-            words={["Copy.", "Paste.", "Get."]}
+            words={["Copy.", "Paste.", "Share."]}
             duration={1200}
             delay={800}
             className="text-blue-500 font-medium"
           />
         </motion.h1>
         <motion.div 
-          className="w-full max-w-[80rem] flex flex-col md:flex-row justify-center items-center gap-4 px-4"
+          className="w-full md:hidden flex flex-col gap-4"
           variants={itemVariants}
         >
-          <div className="w-full md:hidden">
+          <Upload />
+          <Download />
+          <AirShare />
+        </motion.div>
+        <motion.div 
+          className="hidden md:flex justify-center gap-4 w-full max-w-[90rem]"
+          variants={itemVariants}
+        >
+          <MagicCard 
+            className="w-[30rem] h-[30rem] bg-transparent border-none shadow-none"
+            onClick={() => {}}
+          >
             <Upload />
-          </div>
-          <div className="w-full md:hidden">
+          </MagicCard>
+          <MagicCard 
+            className="w-[30rem] h-[30rem] bg-transparent border-none shadow-none"
+            onClick={() => {}}
+          >
             <Download />
-          </div>
-          
-          <div className="hidden md:flex justify-center gap-4 w-full">
-            <MagicCard 
-              className="w-[30rem] h-[30rem] bg-transparent border-none shadow-none"
-              onClick={() => {}}
-            >
-              <Upload />
-            </MagicCard>
-            <MagicCard 
-              className="w-[30rem] h-[30rem] bg-transparent border-none shadow-none"
-              onClick={() => {}}
-            >
-              <Download />
-            </MagicCard>
-          </div>
+          </MagicCard>
+          <MagicCard 
+            className="w-[30rem] h-[30rem] bg-transparent border-none shadow-none"
+            onClick={() => {}}
+          >
+            <AirShare />
+          </MagicCard>
         </motion.div>
         {/* <TestConnection /> */}
       </motion.div>
