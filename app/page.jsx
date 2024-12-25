@@ -77,7 +77,7 @@ export default function Home() {
           variants={itemVariants}
         >
           <FlipWords
-            words={["Copy.", "Paste.", "Share."]}
+            words={["Copy.", "Paste.", "Get.", "Share."]}
             duration={1200}
             delay={800}
             className="text-blue-500 font-medium"
