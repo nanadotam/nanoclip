@@ -4,14 +4,18 @@ import { getDetailedDeviceInfo } from '../utils/deviceNames';
 export default class PeerConnection extends EventEmitter {
   constructor(options = {}) {
     super();
+    this.deviceInfo = options.deviceInfo;
     this.onProgress = options.onProgress || (() => {});
     this.onComplete = options.onComplete || (() => {});
     this.onDeviceConnected = options.onDeviceConnected || (() => {});
+    this.onDeviceInfoUpdate = options.onDeviceInfoUpdate || (() => {});
     
     this.ws = null;
     this.dataChannel = null;
-    this.deviceInfo = getDetailedDeviceInfo();
-
+    this.roomType = null;
+    this.roomId = null;
+    this.roomSecret = null;
+    
     this.peerConnection = new RTCPeerConnection({
       iceServers: [{ urls: 'stun:stun.l.google.com:19302' }]
     });
@@ -136,10 +140,16 @@ export default class PeerConnection extends EventEmitter {
     };
   }
 
-  async createRoom() {
+  async createRoom(type = 'public') {
     try {
       await this.connect();
-      this.ws.send(JSON.stringify({ type: 'create-room' }));
+      this.roomType = type;
+      
+      this.ws.send(JSON.stringify({ 
+        type: 'create-room',
+        roomType: type,
+        deviceInfo: this.deviceInfo
+      }));
       
       return new Promise((resolve) => {
         const checkRoom = setInterval(() => {
@@ -154,10 +164,18 @@ export default class PeerConnection extends EventEmitter {
     }
   }
 
-  async joinRoom(roomId) {
+  async joinRoom(roomId, type = 'public') {
     try {
       await this.connect();
-      this.ws.send(JSON.stringify({ type: 'join-room', roomId }));
+      this.roomType = type;
+      this.roomId = roomId;
+      
+      this.ws.send(JSON.stringify({ 
+        type: 'join-room',
+        roomId,
+        roomType: type,
+        deviceInfo: this.deviceInfo
+      }));
     } catch (error) {
       throw new Error(`Failed to join room: ${error.message}`);
     }

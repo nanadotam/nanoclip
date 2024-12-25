@@ -65,8 +65,11 @@ export default function AirShare() {
             setConnectionStatus('creating room');
 
             peerConnection.current = new PeerConnection({
-                deviceName,
-                deviceType,
+                deviceInfo: {
+                    name: deviceName,
+                    type: deviceType,
+                    id: receiverDevice.id
+                },
                 onProgress: (progress) => setTransferProgress(progress),
                 onComplete: () => {
                     toast({
@@ -76,37 +79,18 @@ export default function AirShare() {
                     setTransferProgress(0);
                 },
                 onDeviceConnected: async (deviceId, deviceInfo) => {
-                    const connectedDevice = deviceInfo || await peerConnection.current.updateDeviceInfo(connectedDevices);
-                    
-                    toast({
-                        title: "Device Connected",
-                        description: `${connectedDevice.name} (${connectedDevice.brand} ${connectedDevice.type}) joined the room`
-                    });
                     setConnectionStatus('connected');
-                    setConnectedDevices(prev => [...prev, connectedDevice]);
-                },
-                onDeviceInfoUpdate: (deviceInfo) => {
-                    if (!deviceInfo) return;
-                    
                     setSenderDevice(deviceInfo);
-                    setConnectedDevices(prev =>
-                        prev.map(d => d.id === deviceInfo.id ? deviceInfo : d)
-                    );
                 }
             });
 
-            const roomId = await peerConnection.current.createRoom();
+            // Create a public room by default
+            const roomId = await peerConnection.current.createRoom('public');
             setCurrentRoomId(roomId);
             setShowRoomCard(true);
             setConnectionStatus('waiting for connection');
         } catch (error) {
-            toast({
-                title: "Connection Error",
-                description: error.message,
-                variant: "destructive"
-            });
-            setConnectionStatus('error');
-            setIsHost(false);
+            handleConnectionError(error);
         }
     };
 
