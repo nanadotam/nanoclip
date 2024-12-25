@@ -252,9 +252,10 @@ export default class PeerConnection extends EventEmitter {
     readSlice(0);
   }
 
-  updateDeviceInfo(info) {
-    this.deviceInfo = { ...this.deviceInfo, ...info };
-    // Broadcast device info update to peers
+  async updateDeviceInfo(connectedDevices = []) {
+    const existingNames = connectedDevices.map(device => device.name);
+    this.deviceInfo = getDetailedDeviceInfo(existingNames);
+    
     if (this.ws?.readyState === WebSocket.OPEN) {
       this.ws.send(JSON.stringify({
         type: 'device-info-update',
@@ -262,6 +263,8 @@ export default class PeerConnection extends EventEmitter {
         roomId: this.roomId
       }));
     }
+    
+    return this.deviceInfo;
   }
 
   async requestDeviceInfo() {

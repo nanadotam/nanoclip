@@ -11,6 +11,7 @@ import { useToast } from "@/hooks/use-toast";
 export default function RoomModal({ roomId, isVisible, onClose, onJoinRoom }) {
   const [copySuccess, setCopySuccess] = useState(false);
   const [joinRoomId, setJoinRoomId] = useState("");
+  const [isJoining, setIsJoining] = useState(false);
   const { toast } = useToast();
 
   const copyToClipboard = async () => {
@@ -31,7 +32,7 @@ export default function RoomModal({ roomId, isVisible, onClose, onJoinRoom }) {
     }
   };
 
-  const handleJoinSubmit = (e) => {
+  const handleJoinSubmit = async (e) => {
     e.preventDefault();
     if (!joinRoomId.trim()) {
       toast({
@@ -41,8 +42,19 @@ export default function RoomModal({ roomId, isVisible, onClose, onJoinRoom }) {
       });
       return;
     }
-    onJoinRoom(joinRoomId.trim());
-    setJoinRoomId(''); // Reset input after submission
+    setIsJoining(true);
+    try {
+      await onJoinRoom(joinRoomId.trim());
+      setJoinRoomId('');
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    } finally {
+      setIsJoining(false);
+    }
   };
 
   return (

@@ -40,9 +40,13 @@ export default function ReceivingView({
                 className="flex flex-col items-center gap-2"
                 initial={{ x: -50 }}
                 animate={{ x: 0 }}
+                key="sender-device"
               >
                 <SenderIcon className="w-12 h-12 text-primary" />
-                <span className="font-medium">{senderDevice?.name || 'Unknown Device'}</span>
+                <span className="font-medium">
+                {senderDevice?.name ? `${senderDevice.name} (${senderDevice.brand || 'Unknown'})` : 'Unknown Device'}
+                  {/* {senderDevice?.name || 'Connecting...'} */}
+                </span>
               </motion.div>
 
               <ArrowRight className="w-6 h-6 text-muted-foreground" />
